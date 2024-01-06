@@ -8,7 +8,7 @@ max_epochs: 100
 accelerator: gpu
 devices: 1
 
-fast_dev_run: false
+fast_dev_run: 5
 
 num_sanity_val_steps: 0
 

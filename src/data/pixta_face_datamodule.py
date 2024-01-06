@@ -48,6 +48,7 @@ class PIXTAFaceDataModule(LightningDataModule):
         ])
 
         self.transforms = T.Compose([
+            SquarePad(),
             T.Resize(IMAGE_SIZE, antialias=True),
             T.ToDtype(torch.float32, scale=True),
             normalize,

@@ -79,7 +79,7 @@ class YOLOModule(LightningModule):
 
         self.lr_schedulers().step()
 
-    # def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch, batch_idx):
     #     imgs, labels, img_hw, image_id, img_name = batch
     #     if self.ema_model is not None:
     #         model = self.ema_model.ema
@@ -94,6 +94,7 @@ class YOLOModule(LightningModule):
     #     json_det, det = format_outputs(detections, image_id, img_hw, self.img_size_val,
     #                                    self.trainer.datamodule.dataset_val.class_ids, labels)
     #     return json_det, det
+        return torch.nn.Parameter(torch.tensor(0.0))
 
     # def validation_epoch_end(self, val_step_outputs):
     #     json_list = []
@@ -141,7 +142,7 @@ class YOLOModule(LightningModule):
         detections = self.model(imgs)
         return detections
 
-    # def test_step(self, batch, batch_idx):
+    def test_step(self, batch, batch_idx):
     #     imgs, labels, img_hw, image_id, img_name = batch
     #     # inference
     #     model = self.model
@@ -155,6 +156,7 @@ class YOLOModule(LightningModule):
     #     json_det, det = format_outputs(detections, image_id, img_hw, self.img_size_val,
     #                                    self.trainer.datamodule.dataset_test.class_ids, labels)
     #     return json_det, det, imgs, img_name
+        return torch.nn.Parameter(torch.tensor(0.0))
 
     # def test_epoch_end(self, test_step_outputs):
     #     json_list = []
