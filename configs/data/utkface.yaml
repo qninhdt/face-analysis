@@ -1,0 +1,6 @@
+_target_: data.utkface_datamodule.UTKFaceDataModule
+data_dir: ${paths.data_dir}/utkface
+batch_size: 64
+train_val_test_split: [20_706, 1_000, 2_000] # 23_706
+num_workers: 10
+pin_memory: False

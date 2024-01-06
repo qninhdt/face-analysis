@@ -1,0 +1,4 @@
+backbone_finetuning:
+  _target_: lightning.pytorch.callbacks.BackboneFinetuning
+  unfreeze_backbone_at_epoch: 0
+  backbone_initial_lr: 0.00001
