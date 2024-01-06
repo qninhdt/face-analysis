@@ -5,14 +5,21 @@ import torch.nn as nn
 class ImplicitHead(nn.Module):
     def __init__(
             self,
-            num_classes,
             num_anchors,
             in_channels,
     ):
         super().__init__()
         self.n_anchors = num_anchors
-        self.num_classes = num_classes
-        ch = self.n_anchors * (5 + num_classes)
+        
+        # box        :  4
+        # score      :  1
+        # age        :  6
+        # race       :  3
+        # masked     :  1
+        # skintone   :  4
+        # emotion    :  7
+        # gender     :  1
+        ch = self.n_anchors * (4 + 1 + 6 + 3 + 1 + 4 + 7 + 1)
 
         self.conv = nn.ModuleList()
         self.ia = nn.ModuleList()

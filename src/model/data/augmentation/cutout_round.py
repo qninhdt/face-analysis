@@ -1,6 +1,6 @@
 import random
 import numpy as np
-from models.utils.bbox import bbox_ioa
+from utils.bbox import bbox_ioa
 
 
 def cutout_rounding(img, labels, n_hole, cutout_ratio, mixup, ioa_thre):

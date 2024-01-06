@@ -1,7 +1,7 @@
 import math
 import torch
 import torch.nn as nn
-from models.layers.network_blocks import BaseConv
+from model.layers.network_blocks import BaseConv
 
 
 class DecoupledHead(nn.Module):

@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from models.layers.transformer import TransformerLayer
+from model.layers.transformer import TransformerLayer
 
 
 class PatchEmbeddings(nn.Module):

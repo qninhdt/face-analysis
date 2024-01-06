@@ -1,0 +1,5 @@
+_target_: data.pixta_face_datamodule.PIXTAFaceDataModule
+data_dir: ${paths.data_dir}/pixta_face
+batch_size: 8
+num_workers: 10
+pin_memory: False

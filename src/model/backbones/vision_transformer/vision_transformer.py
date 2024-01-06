@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from models.utils.helpers import DropPath, to_2tuple, trunc_normal_
+from utils.helpers import DropPath, to_2tuple, trunc_normal_
 import math
 
 

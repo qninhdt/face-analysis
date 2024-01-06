@@ -26,12 +26,11 @@ test: ## Run not slow tests
 test-full: ## Run all tests
 	pytest
 
-train-simple-cnn:
+train-yolo: ## Train YOLO model
 	python src/train.py \
-		model=simple_cnn \
-		ckpt_path="./checkpoints/last.ckpt"	\
-		logger.wandb.id=7s0cbsm4 \
-		data.batch_size=128
+		model=yolo \
+		trainer=gpu \
+		data.batch_size=4
 
 eval:
 	python src/eval.py

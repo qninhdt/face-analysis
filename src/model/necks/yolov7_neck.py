@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from models.layers.network_blocks import BaseConv, SPPCSPC
+from model.layers.network_blocks import BaseConv, SPPCSPC
 
 
 class YOLOv7NECK(nn.Module):

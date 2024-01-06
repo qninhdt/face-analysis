@@ -8,8 +8,8 @@ Depths and Channels
 """
 import torch
 from torch import nn
-from models.layers.network_blocks import Focus, BaseConv, SPPBottleneck
-from models.layers.activation import get_activation
+from model.layers.network_blocks import Focus, BaseConv, SPPBottleneck
+from model.layers.activation import get_activation
 
 
 class CSPMobileNext(nn.Module):

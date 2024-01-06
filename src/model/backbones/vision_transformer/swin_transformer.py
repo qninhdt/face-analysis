@@ -36,7 +36,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
 import numpy as np
-from models.utils.helpers import DropPath, to_2tuple, trunc_normal_
+from utils.helpers import DropPath, to_2tuple, trunc_normal_
 
 
 class Mlp(nn.Module):

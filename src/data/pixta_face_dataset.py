@@ -43,6 +43,7 @@ class PIXTAFaceDataset(Dataset):
         race = torch.tensor([face['race'] for face in target['faces']], dtype=torch.int32)
         emotion = torch.tensor([face['emotion'] for face in target['faces']], dtype=torch.int32)
         masked = torch.tensor([face['masked'] for face in target['faces']], dtype=torch.int32)
+        skintone = torch.tensor([face['skintone'] for face in target['faces']], dtype=torch.int32)
         boxes = tv_tensors.BoundingBoxes([face['box'] for face in target['faces']], format='xywh',
                                          canvas_size=(h, w))
 
@@ -53,6 +54,7 @@ class PIXTAFaceDataset(Dataset):
             'race': race,
             'emotion': emotion,
             'masked': masked,
+            'skintone': skintone,
             'boxes': boxes,
         }
 

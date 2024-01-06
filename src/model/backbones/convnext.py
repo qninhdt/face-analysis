@@ -12,7 +12,7 @@ Depths:
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from models.layers.weight_init import trunc_normal_
+from model.layers.weight_init import trunc_normal_
 
 
 class ConvNeXt(nn.Module):

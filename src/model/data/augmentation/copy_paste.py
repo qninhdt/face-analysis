@@ -3,7 +3,7 @@ from typing import Tuple, List, Dict, Any
 import random
 import cv2
 import numpy as np
-from models.utils.bbox import bbox_ioa
+from utils.bbox import bbox_ioa
 
 
 def copy_paste(img: np.ndarray, labels: np.ndarray, objects: Dict[int, List[np.ndarray]],

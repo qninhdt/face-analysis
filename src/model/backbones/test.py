@@ -9,7 +9,7 @@ Depths and Channels
 
 
 from torch import nn
-from models.layers.network_blocks import Focus, BaseConv, CSPLayer, SPPBottleneck
+from model.layers.network_blocks import Focus, BaseConv, CSPLayer, SPPBottleneck
 
 
 class CSPDarkNet(nn.Module):

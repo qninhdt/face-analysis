@@ -1,7 +1,7 @@
 import torch
 import torchvision
 import numpy as np
-from models.utils.bbox import xyxy2xywh
+from utils.bbox import xyxy2xywh
 
 
 def postprocess(predictions, conf_thre=0.7, nms_thre=0.45, class_agnostic=False):

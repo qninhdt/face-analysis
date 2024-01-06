@@ -1,7 +1,7 @@
 import time
 import torch
 import torchvision
-from models.utils.bbox import xywh2xyxy, box_iou
+from utils.bbox import xywh2xyxy, box_iou
 
 
 class YOLOv5Decoder:

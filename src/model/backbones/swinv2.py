@@ -3,9 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
 import numpy as np
-from models.layers.drops import DropPath
-from models.layers.weight_init import trunc_normal_
-from models.utils.helpers import to_2tuple
+from model.layers.drops import DropPath
+from model.layers.weight_init import trunc_normal_
+from utils.helpers import to_2tuple
 
 
 class SwinTransformerV2(nn.Module):

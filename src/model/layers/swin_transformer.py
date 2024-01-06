@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
-from models.backbones.swinv2 import Mlp, window_partition, window_reverse, WindowAttention
-from models.layers.drops import DropPath
-from models.utils.helpers import to_2tuple
+from model.backbones.swinv2 import Mlp, window_partition, window_reverse, WindowAttention
+from model.layers.drops import DropPath
+from utils.helpers import to_2tuple
 
 
 class SwinTransformerLayer(nn.Module):

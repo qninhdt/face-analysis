@@ -11,9 +11,9 @@ Channels:
 
 import torch
 import torch.nn as nn
-from models.layers.network_blocks import BaseConv
-from models.layers.activation import HSwish
-from models.layers.attention import SELayer
+from model.layers.network_blocks import BaseConv
+from model.layers.activation import HSwish
+from model.layers.attention import SELayer
 
 
 class ShuffleNetV2_Plus(nn.Module):

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from models.layers.network_blocks import BaseConv, CSPLayer
+from model.layers.network_blocks import BaseConv, CSPLayer
 
 
 class CSPPAFPN(nn.Module):

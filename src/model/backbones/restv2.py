@@ -20,9 +20,9 @@ large(pretrained=False, **kwargs):  # 85.3|39.6|218M -> |14.09G|98.61M
 import torch
 import torch.nn as nn
 
-from models.layers.drops import DropPath
-from models.layers.weight_init import trunc_normal_
-from models.utils.helpers import to_2tuple
+from model.layers.drops import DropPath
+from model.layers.weight_init import trunc_normal_
+from utils.helpers import to_2tuple
 
 
 class ResTV2(nn.Module):

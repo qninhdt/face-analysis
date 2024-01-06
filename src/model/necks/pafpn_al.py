@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from models.layers.activation import get_activation
-from models.layers.network_blocks import BaseConv
+from model.layers.activation import get_activation
+from model.layers.network_blocks import BaseConv
 
 
 class AL_PAFPN(nn.Module):

@@ -2,13 +2,12 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from models.layers.losses.iou_loss import bboxes_iou
-from models.utils.bbox import xywh2xyxy
+from model.layers.losses.iou_loss import bboxes_iou
+from utils.bbox import xywh2xyxy
 
 
 class YOLOv7Loss(nn.Module):
     def __init__(self,
-                 num_classes,
                  strides,
                  anchors,
                  label_smoothing=0,
@@ -16,30 +15,48 @@ class YOLOv7Loss(nn.Module):
         super(YOLOv7Loss, self).__init__()
 
         self.anchors = torch.tensor(anchors)
-        self.num_classes = num_classes
         self.strides = strides
 
         self.nl = len(strides)
         self.na = len(anchors[0])
-        self.ch = 5 + self.num_classes
+
+        # score      :  1
+        # box        :  4
+        # age        :  6
+        # race       :  3
+        # masked     :  1
+        # skintone   :  4
+        # emotion    :  7
+        # gender     :  1
+        self.ch = 1 + 4 + 6 + 3 + 1 + 4 + 7 + 1
 
         self.balance = [0.4, 1.0, 4]
+        
         self.box_ratio = 0.05
         self.obj_ratio = 1
-        self.cls_ratio = 0.5 * (num_classes / 80)
+
+        self.age_ratio = 0.5
+        self.race_ratio = 0.5
+        self.gender_ratio = 0.5
+        self.masked_ratio = 0.5
+        self.skintone_ratio = 0.5
+        self.emotion_ratio = 0.5
+
         self.threshold = 4.0
 
         self.grids = [torch.zeros(1)] * len(strides)
         self.anchor_grid = self.anchors.clone().view(self.nl, 1, -1, 1, 1, 2)
 
         self.cp, self.cn = smooth_BCE(eps=label_smoothing)
-        self.BCEcls, self.BCEobj, self.gr = nn.BCEWithLogitsLoss(), nn.BCEWithLogitsLoss(), 1
+
+        self.gr = 1
 
     def __call__(self, inputs, targets):
-        # input of inputs: [batch, ch * anchor, h, w]
+        # shape of inputs: [batch, ch * anchor, h, w]
 
-        batch_size = targets.shape[0]
-        # input: [batch, anchor, h, w, ch]
+        batch_size = len(targets)
+
+        # [batch, ch * anchor, h, w] -> [batch, anchor, h, w, ch]
         for i in range(self.nl):
             prediction = inputs[i].view(
                 inputs[i].size(0), self.na, self.ch, inputs[i].size(2), inputs[i].size(3)
@@ -67,38 +84,55 @@ class YOLOv7Loss(nn.Module):
 
             # preds: [batch_size, all predictions, n_ch]
             predictions = torch.cat(preds, 1)
-            # from (cx,cy,w,h) to (x1,y1,x2,y2)
+            # from (cx,cy,w,h) to (x,y,w,h)
             box_corner = predictions.new(predictions.shape)
             box_corner = box_corner[:, :, 0:4]
             box_corner[:, :, 0] = predictions[:, :, 0] - predictions[:, :, 2] / 2
             box_corner[:, :, 1] = predictions[:, :, 1] - predictions[:, :, 3] / 2
-            box_corner[:, :, 2] = predictions[:, :, 0] + predictions[:, :, 2] / 2
-            box_corner[:, :, 3] = predictions[:, :, 1] + predictions[:, :, 3] / 2
+            box_corner[:, :, 2] = predictions[:, :, 2]
+            box_corner[:, :, 3] = predictions[:, :, 3]
             predictions[:, :, :4] = box_corner[:, :, :4]
             return predictions
 
         # Compute loss
         # Processing ground truth to tensor (img_idx, class, cx, cy, w, h)
-        n_gt = (targets.sum(dim=2) > 0).sum(dim=1)
 
         gts_list = []
         for img_idx in range(batch_size):
-            nt = n_gt[img_idx]
-            gt_boxes = targets[img_idx, :nt, 1:5]
-            gt_classes = targets[img_idx, :nt, 0].unsqueeze(-1)
-            gt_img_ids = torch.ones_like(gt_classes).type_as(gt_classes) * img_idx
-            gt = torch.cat((gt_img_ids, gt_classes, gt_boxes), 1)
+            target = targets[img_idx]
+
+            gt_boxes = target['boxes']
+            gt_age      = target['age'].unsqueeze(-1)
+            gt_race     = target['race'].unsqueeze(-1)
+            gt_masked   = target['masked'].unsqueeze(-1)
+            gt_skintone = target['skintone'].unsqueeze(-1)
+            gt_emotion  = target['emotion'].unsqueeze(-1)
+            gt_gender   = target['gender'].unsqueeze(-1)
+
+            gt_img_ids = torch.ones_like(gt_age).type_as(gt_age) * img_idx
+            
+            # [nboxes, img_idx + boxes + age + race + masked + skintone + emotion + gender]
+            gt = torch.cat((gt_img_ids, gt_boxes, gt_age, gt_race, gt_masked, gt_skintone,
+                            gt_emotion, gt_gender), dim=1)
+
             gts_list.append(gt)
+
         targets = torch.cat(gts_list, 0)
 
         bs, as_, gjs, gis, targets, anchors = self.build_targets(inputs, targets)
 
-        cls_loss = torch.zeros(1).type_as(inputs[0])
+        age_loss = torch.zeros(1).type_as(inputs[0])
+        race_loss = torch.zeros(1).type_as(inputs[0])
+        masked_loss = torch.zeros(1).type_as(inputs[0])
+        skintone_loss = torch.zeros(1).type_as(inputs[0])
+        emotion_loss = torch.zeros(1).type_as(inputs[0])
+        gender_loss = torch.zeros(1).type_as(inputs[0])
+        
         box_loss = torch.zeros(1).type_as(inputs[0])
         obj_loss = torch.zeros(1).type_as(inputs[0])
 
         for i, prediction in enumerate(inputs):
-            #   image, anchor, gridy, gridx
+            # image, anchor, gridy, gridx
             b, a, gj, gi = bs[i], as_[i], gjs[i], gis[i]
             tobj = torch.zeros_like(prediction[..., 0]).type_as(prediction)  # target obj
 
@@ -108,48 +142,96 @@ class YOLOv7Loss(nn.Module):
 
                 grid = torch.stack([gi, gj], dim=1)
 
-                #   进行解码，获得预测结果
+                # decode, get prediction results
                 xy = prediction_pos[:, :2].sigmoid() * 2. - 0.5
                 wh = (prediction_pos[:, 2:4].sigmoid() * 2) ** 2 * anchors[i]
                 box = torch.cat((xy, wh), 1)
 
-                #   对真实框进行处理，映射到特征层上
-                selected_tbox = targets[i][:, 2:6] / self.strides[i]
+                # process the real box and map it to the feature layer
+                selected_tbox = targets[i][:, 1:5] / self.strides[i]
                 selected_tbox[:, :2] = selected_tbox[:, :2] - grid.type_as(prediction)
 
-                #   计算预测框和真实框的回归损失
+                # calculate the regression loss of the predicted box and the real box
                 iou = bbox_iou(box.T, selected_tbox, x1y1x2y2=False, CIoU=True)
                 box_loss += (1.0 - iou).mean()
                 # -------------------------------------------#
-                #   根据预测结果的iou获得置信度损失的gt
+                # get the gt of the confidence loss according to the iou of the prediction result
                 # -------------------------------------------#
                 tobj[b, a, gj, gi] = (1.0 - self.gr) + self.gr * iou.detach().clamp(0).type(tobj.dtype)  # iou ratio
 
                 # -------------------------------------------#
-                #   计算匹配上的正样本的分类损失
+                # calculate the classification loss of the matched positive sample
                 # -------------------------------------------#
-                selected_tcls = targets[i][:, 1].long()
-                t = torch.full_like(prediction_pos[:, 5:], self.cn).type_as(prediction)  # targets
-                t[range(n), selected_tcls] = self.cp
-                cls_loss += self.BCEcls(prediction_pos[:, 5:], t)  # BCE
+                selected_age      = targets[i][:, 5].long() # 6
+                selected_race     = targets[i][:, 6].long() # 3
+                selected_masked   = targets[i][:, 7].long() # 1
+                selected_skintone = targets[i][:, 8].long() # 4
+                selected_emotion  = targets[i][:, 9].long() # 7
+                selected_gender   = targets[i][:, 10].long() # 1
+
+                # age loss
+                t = torch.full_like(prediction_pos[:, 5:11], self.cn).type_as(prediction)  # targets
+                t[range(n), selected_age] = self.cp
+                age_loss += F.binary_cross_entropy_with_logits(prediction_pos[:, 5:11], t)  # BCE
+
+                # race loss
+                t = torch.full_like(prediction_pos[:, 11:14], self.cn).type_as(prediction)  # targets
+                t[range(n), selected_race] = self.cp
+                race_loss += F.binary_cross_entropy_with_logits(prediction_pos[:, 11:14], t)  # BCE
+                
+                # masked loss
+                t = selected_masked.type_as(prediction)  # targets
+                masked_loss += F.binary_cross_entropy_with_logits(prediction_pos[:, 14], t)  # BCE
+                
+                # skintone loss
+                t = torch.full_like(prediction_pos[:, 15:19], self.cn).type_as(prediction)  # targets
+                t[range(n), selected_skintone] = self.cp
+                skintone_loss += F.binary_cross_entropy_with_logits(prediction_pos[:, 15:19], t)  # BCE
+
+                # emotion loss
+                t = torch.full_like(prediction_pos[:, 19:26], self.cn).type_as(prediction)  # targets
+                t[range(n), selected_emotion] = self.cp
+                emotion_loss += F.binary_cross_entropy_with_logits(prediction_pos[:, 19:26], t)  # BCE
+
+                # gender loss
+                t = selected_gender.type_as(prediction)  # targets
+                gender_loss += F.binary_cross_entropy_with_logits(prediction_pos[:, 26], t)  # BCE
 
             # -------------------------------------------#
-            #   计算目标是否存在的置信度损失
-            #   并且乘上每个特征层的比例
+            # calculate the confidence loss of whether the target exists
+            # and multiply by the ratio of each feature layer
             # -------------------------------------------#
-            obj_loss += self.BCEobj(prediction[..., 4], tobj) * self.balance[i]  # obj loss
-
+            obj_loss += F.binary_cross_entropy_with_logits(prediction[..., 4], tobj) * self.balance[i]  # obj loss
         # -------------------------------------------#
-        #   将各个部分的损失乘上比例
-        #   全加起来后，乘上batch_size
+        # multiply the loss of each part by the ratio
+        # after adding them all up, multiply by batch_size
         # -------------------------------------------#
         box_loss *= self.box_ratio
         obj_loss *= self.obj_ratio
-        cls_loss *= self.cls_ratio
+        age_loss *= self.age_ratio
+        race_loss *= self.race_ratio
+        masked_loss *= self.masked_ratio
+        skintone_loss *= self.skintone_ratio
+        emotion_loss *= self.emotion_ratio
+        gender_loss *= self.gender_ratio
 
-        loss = box_loss + obj_loss + cls_loss
+        loss = box_loss + obj_loss + age_loss \
+            + race_loss + masked_loss + skintone_loss \
+            + emotion_loss + gender_loss
 
-        losses = {"loss": loss}
+        losses = {
+            'loss': loss,
+            'box_loss': box_loss,
+            'obj_loss': obj_loss,
+            'age_loss': age_loss,
+            'race_loss': race_loss,
+            'masked_loss': masked_loss,
+            'skintone_loss': skintone_loss,
+            'emotion_loss': emotion_loss,
+            'gender_loss': gender_loss,
+
+        }
+
         return losses
 
     def build_targets(self, predictions, targets):
@@ -173,11 +255,16 @@ class YOLOv7Loss(nn.Module):
             if this_target.shape[0] == 0:
                 continue
 
-            txywh = this_target[:, 2:6]
+            txywh = this_target[:, 1:5]
             txyxy = xywh2xyxy(txywh)
 
             pxyxys = []
-            p_cls = []
+            p_age = []
+            p_race = []
+            p_masked = []
+            p_skintone = []
+            p_emotion = []
+            p_gender = []
             p_obj = []
             from_which_layer = []
             all_b = []
@@ -199,7 +286,12 @@ class YOLOv7Loss(nn.Module):
 
                 fg_pred = map[b, a, gj, gi]
                 p_obj.append(fg_pred[:, 4:5])
-                p_cls.append(fg_pred[:, 5:])
+                p_age.append(fg_pred[:, 5:11])
+                p_race.append(fg_pred[:, 11:14])
+                p_masked.append(fg_pred[:, 14:15])
+                p_skintone.append(fg_pred[:, 15:19])
+                p_emotion.append(fg_pred[:, 19:26])
+                p_gender.append(fg_pred[:, 26:27])
 
                 grid = torch.stack([gi, gj], dim=1)
                 pxy = (fg_pred[:, :2].sigmoid() * 2. - 0.5 + grid) * self.strides[i]  # / 8.
@@ -211,9 +303,16 @@ class YOLOv7Loss(nn.Module):
             pxyxys = torch.cat(pxyxys, dim=0)
             if pxyxys.shape[0] == 0:
                 continue
+
             p_obj = torch.cat(p_obj, dim=0)
-            p_cls = torch.cat(p_cls, dim=0)
-            from_which_layer = torch.cat(from_which_layer, dim=0)
+            p_age = torch.cat(p_age, dim=0)
+            p_race = torch.cat(p_race, dim=0)
+            p_masked = torch.cat(p_masked, dim=0)
+            p_skintone = torch.cat(p_skintone, dim=0)
+            p_emotion = torch.cat(p_emotion, dim=0)
+            p_gender = torch.cat(p_gender, dim=0)
+            
+            from_which_layer = torch.cat(from_which_layer, dim=0).to(this_target.device)
             all_b = torch.cat(all_b, dim=0)
             all_a = torch.cat(all_a, dim=0)
             all_gj = torch.cat(all_gj, dim=0)
@@ -227,27 +326,49 @@ class YOLOv7Loss(nn.Module):
             top_k, _ = torch.topk(pair_wise_iou, min(10, pair_wise_iou.shape[1]), dim=1)
             dynamic_ks = torch.clamp(top_k.sum(1).int(), min=1)
 
-            gt_cls_per_image = (
-                F.one_hot(this_target[:, 1].to(torch.int64), self.num_classes)
-                .float()
-                .unsqueeze(1)
-                .repeat(1, pxyxys.shape[0], 1)
-            )
-
+            gt_age_per_image = F.one_hot(this_target[:, 5].to(torch.int64), 6).float().unsqueeze(1).repeat(1, pxyxys.shape[0], 1)
+            gt_race_per_image = F.one_hot(this_target[:, 6].to(torch.int64), 3).float().unsqueeze(1).repeat(1, pxyxys.shape[0], 1)
+            gt_masked_per_image = this_target[:, 7].float().unsqueeze(-1).unsqueeze(1).repeat(1, pxyxys.shape[0], 1)
+            gt_skintone_per_image = F.one_hot(this_target[:, 8].to(torch.int64), 4).float().unsqueeze(1).repeat(1, pxyxys.shape[0], 1)
+            gt_emotion_per_image = F.one_hot(this_target[:, 9].to(torch.int64), 7).float().unsqueeze(1).repeat(1, pxyxys.shape[0], 1)
+            gt_gender_per_image = this_target[:, 10].float().unsqueeze(-1).unsqueeze(1).repeat(1, pxyxys.shape[0], 1)
             num_gt = this_target.shape[0]
-            cls_preds_ = (
-                    p_cls.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
-                    * p_obj.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
-            )
 
-            y = cls_preds_.sqrt_()
-            pair_wise_cls_loss = F.binary_cross_entropy_with_logits(
-                torch.log(y / (1 - y)), gt_cls_per_image, reduction="none"
-            ).sum(-1)
-            del cls_preds_
+            age_preds_ = p_age.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_() * p_obj.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
+            race_preds_ = p_race.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_() * p_obj.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
+            masked_preds_ = p_masked.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_() * p_obj.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
+            skintone_preds_ = p_skintone.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_() * p_obj.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
+            emotion_preds_ = p_emotion.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_() * p_obj.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
+            gender_preds_ = p_gender.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_() * p_obj.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
+
+            age_y = age_preds_.sqrt_()
+            race_y = race_preds_.sqrt_()
+            masked_y = masked_preds_.sqrt_()
+            skintone_y = skintone_preds_.sqrt_()
+            emotion_y = emotion_preds_.sqrt_()
+            gender_y = gender_preds_.sqrt_()
+
+            pair_wise_age_loss = F.binary_cross_entropy_with_logits(torch.log(age_y / (1 - age_y)), gt_age_per_image, reduction="none").sum(-1)
+            pair_wise_race_loss = F.binary_cross_entropy_with_logits(torch.log(race_y / (1 - race_y)), gt_race_per_image, reduction="none").sum(-1)
+            pair_wise_masked_loss = F.binary_cross_entropy_with_logits(torch.log(masked_y / (1 - masked_y)), gt_masked_per_image, reduction="none").sum(-1)
+            pair_wise_skintone_loss = F.binary_cross_entropy_with_logits(torch.log(skintone_y / (1 - skintone_y)), gt_skintone_per_image, reduction="none").sum(-1)
+            pair_wise_emotion_loss = F.binary_cross_entropy_with_logits(torch.log(emotion_y / (1 - emotion_y)), gt_emotion_per_image, reduction="none").sum(-1)
+            pair_wise_gender_loss = F.binary_cross_entropy_with_logits(torch.log(gender_y / (1 - gender_y)), gt_gender_per_image, reduction="none").sum(-1)
+
+            del age_preds_
+            del race_preds_
+            del masked_preds_
+            del skintone_preds_
+            del emotion_preds_
+            del gender_preds_
 
             cost = (
-                    pair_wise_cls_loss
+                    pair_wise_age_loss
+                    + pair_wise_race_loss
+                    + pair_wise_masked_loss
+                    + pair_wise_skintone_loss
+                    + pair_wise_emotion_loss
+                    + pair_wise_gender_loss
                     + 3.0 * pair_wise_iou_loss
             )
 
@@ -270,6 +391,7 @@ class YOLOv7Loss(nn.Module):
             matched_gt_inds = matching_matrix[:, fg_mask_inboxes].argmax(0)
 
             from_which_layer = from_which_layer[fg_mask_inboxes]
+            
             all_b = all_b[fg_mask_inboxes]
             all_a = all_a[fg_mask_inboxes]
             all_gj = all_gj[fg_mask_inboxes]
@@ -316,9 +438,9 @@ class YOLOv7Loss(nn.Module):
         """
         na, nt = self.na, targets.shape[0]  # number of anchors, targets
         indices, anch = [], []
-        gain = torch.ones(7).type_as(targets).long()  # normalized to gridspace gain
-        ai = torch.arange(na).type_as(targets).view(na, 1).repeat(1, nt)  # same as .repeat_interleave(nt)
-        targets = torch.cat((targets.repeat(na, 1, 1), ai[:, :, None]), 2)  # append anchor indices
+        gain = torch.ones(12).type_as(targets).long()  # normalized to gridspace gain
+        ai = torch.arange(na).type_as(targets).view(na, 1).repeat(1, nt)  # [na, nt, 1]
+        targets = torch.cat((targets.repeat(na, 1, 1), ai[:, :, None]), 2)  # [na, nt, 7]
 
         g = 0.5  # bias
         off = torch.tensor([[0, 0],
@@ -330,20 +452,22 @@ class YOLOv7Loss(nn.Module):
 
             # put anchor and target to feature map
             anchors = (self.anchors[i] / self.strides[i]).type_as(predictions[i])
-            gain[2:6] = self.strides[i]
+            gain[1:5] = self.strides[i]
             target = targets / gain
-            gain[2:6] = torch.tensor(predictions[i].shape)[[3, 2, 3, 2]]  # w and h
+
+            # TODO: check this ([3, 2, 3, 2] or [2, 3, 2, 3] ?)
+            gain[1:5] = torch.tensor(predictions[i].shape)[[3, 2, 3, 2]]  # w and h
 
             # Match targets to anchors
             if nt:
                 # target and anchor wh ratio in threshold
-                r = target[:, :, 4:6] / anchors[:, None]  # wh ratio
+                r = target[:, :, 3:5] / anchors[:, None]  # wh ratio
                 wh_mask = torch.max(r, 1. / r).max(2)[0] < self.threshold  # compare
                 t = target[wh_mask]
 
                 # Positive adjacent grid
-                gxy = t[:, 2:4]  # grid xy
-                gxi = gain[[2, 3]] - gxy  # inverse grid xy
+                gxy = t[:, 1:3]  # grid xy
+                gxi = gain[[1, 2]] - gxy  # inverse grid xy
                 j, k = ((gxy % 1. < g) & (gxy > 1.)).T
                 l, m = ((gxi % 1. < g) & (gxi > 1.)).T
                 j = torch.stack((torch.ones_like(j), j, k, l, m))
@@ -354,15 +478,15 @@ class YOLOv7Loss(nn.Module):
                 offsets = 0
 
             # Define
-            b, c = t[:, :2].long().T  # image_idx, class
-            gxy = t[:, 2:4]  # grid xy
-            gwh = t[:, 4:6]  # grid wh
+            b, c = t[:, 0].long(), t[:, 5:].long()  # image_idx, class
+            gxy = t[:, 1:3]  # grid xy
+            gwh = t[:, 3:5]  # grid wh
             gij = (gxy - offsets).long()
             gi, gj = gij.T  # grid xy indices
 
             # Append
-            a = t[:, 6].long()  # anchor indices
-            indices.append((b, a, gj.clamp_(0, gain[3] - 1), gi.clamp_(0, gain[2] - 1)))  # image, anchor, grid indices
+            a = t[:, 11].long()  # anchor indices
+            indices.append((b, a, gj.clamp_(0, gain[2] - 1), gi.clamp_(0, gain[1] - 1)))  # image, anchor, grid indices
             anch.append(anchors[a])  # anchors
 
         return indices, anch

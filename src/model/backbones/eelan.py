@@ -9,7 +9,7 @@ Depths and Channels
 
 import torch
 from torch import nn
-from models.layers.network_blocks import BaseConv, SPPBottleneck
+from model.layers.network_blocks import BaseConv, SPPBottleneck
 
 
 class EELAN(nn.Module):
@@ -137,5 +137,4 @@ class Transition(nn.Module):
 
         x_2 = self.conv2(x)
         x_2 = self.conv3(x_2)
-
         return torch.cat([x_2, x_1], 1)

@@ -1,7 +1,7 @@
 import numpy as np
 from terminaltables import AsciiTable
 from multiprocessing import Pool
-from models.utils.bbox import bbox_overlaps
+from utils.bbox import bbox_overlaps
 
 
 def VOCEvaluator(det_list, val_dataset, iou_thr=0.5):
