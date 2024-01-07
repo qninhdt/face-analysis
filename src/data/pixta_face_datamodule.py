@@ -40,9 +40,9 @@ class PIXTAFaceDataModule(LightningDataModule):
             T.RandomGrayscale(p=0.1),
             T.Resize(IMAGE_SIZE, antialias=True),
             T.ColorJitter(brightness=[0.5, 1.25]),
-            T.RandomApply([
-                T.GaussianBlur(kernel_size=(7, 7), sigma=(0.1, 2))
-            ], p=0.5),
+            # T.RandomApply([
+            #     T.GaussianBlur(kernel_size=(7, 7), sigma=(0.1, 2))
+            # ], p=0.5),
             T.ToDtype(torch.float32, scale=True),
             normalize,
         ])

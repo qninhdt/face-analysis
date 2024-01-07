@@ -35,11 +35,11 @@ class YOLOv7Loss(nn.Module):
         # box        :  4
         # age        :  6
         # race       :  3
-        # masked     :  1
+        # masked     :  2
         # skintone   :  4
         # emotion    :  7
-        # gender     :  1
-        self.ch = 1 + 4 + 6 + 3 + 1 + 4 + 7 + 1
+        # gender     :  2
+        self.ch = 1 + 4 + 6 + 3 + 2 + 4 + 7 + 2
 
         self.balance = [0.4, 1.0, 4]
         
@@ -64,7 +64,7 @@ class YOLOv7Loss(nn.Module):
     def __call__(self, inputs, targets):
         # shape of inputs: [batch, ch * anchor, h, w]
 
-        batch_size = len(targets)
+        batch_size = inputs[0].shape[0]
 
         # [batch, ch * anchor, h, w] -> [batch, anchor, h, w, ch]
         for i in range(self.nl):
@@ -183,35 +183,37 @@ class YOLOv7Loss(nn.Module):
                 t = torch.full_like(prediction_pos[:, 5:11], self.cn).type_as(prediction)  # targets
                 t[range(n), selected_age] = self.cp
                 age_weight = torch.tensor([0.011, 0.0771, 0.1295, 0.1939, 0.2305, 0.358]).type_as(prediction)
-                age_loss += F.cross_entropy(prediction_pos[:, 5:11], t, weight=age_weight)  # BCE
+                age_loss += F.binary_cross_entropy_with_logits(prediction_pos[:, 5:11], t, weight=age_weight)  # BCE
 
                 # race loss
                 t = torch.full_like(prediction_pos[:, 11:14], self.cn).type_as(prediction)  # targets
                 t[range(n), selected_race] = self.cp
                 race_weight = torch.tensor([0.08, 0.0843, 0.8357]).type_as(prediction)
-                race_loss += F.cross_entropy(prediction_pos[:, 11:14], t, weight=race_weight)  # BCE
+                race_loss += F.binary_cross_entropy_with_logits(prediction_pos[:, 11:14], t, weight=race_weight)  # BCE
                 
                 # masked loss
-                t = selected_masked.type_as(prediction)  # targets
-                masked_weight = torch.tensor(0.9671 / 0.0329).type_as(prediction)
-                masked_loss += F.binary_cross_entropy_with_logits(prediction_pos[:, 14], t, weight=masked_weight) / (1.0 + masked_weight)  # BCE
+                t = torch.full_like(prediction_pos[:, 14:16], self.cn).type_as(prediction)  # targets
+                t[range(n), selected_masked] = self.cp
+                masked_weight = torch.tensor([0.0329, 0.9671]).type_as(prediction)
+                masked_loss += F.binary_cross_entropy_with_logits(prediction_pos[:, 14:16], t, weight=masked_weight)  # BCE
                 
                 # skintone loss
-                t = torch.full_like(prediction_pos[:, 15:19], self.cn).type_as(prediction)  # targets
+                t = torch.full_like(prediction_pos[:, 16:20], self.cn).type_as(prediction)  # targets
                 t[range(n), selected_skintone] = self.cp
                 skintone_weight = torch.tensor([0.0209, 0.0593, 0.2742, 0.6456]).type_as(prediction)
-                skintone_loss += F.cross_entropy(prediction_pos[:, 15:19], t, weight=skintone_weight)  # BCE
+                skintone_loss += F.binary_cross_entropy_with_logits(prediction_pos[:, 16:20], t, weight=skintone_weight)  # BCE
 
                 # emotion loss
-                t = torch.full_like(prediction_pos[:, 19:26], self.cn).type_as(prediction)  # targets
+                t = torch.full_like(prediction_pos[:, 20:27], self.cn).type_as(prediction)
                 t[range(n), selected_emotion] = self.cp
                 emotion_weight = torch.tensor([0.0042, 0.008, 0.1023, 0.1218, 0.1283, 0.2944, 0.3409]).type_as(prediction)
-                emotion_loss += F.cross_entropy(prediction_pos[:, 19:26], t, weight=emotion_weight)  # BCE
+                emotion_loss += F.binary_cross_entropy_with_logits(prediction_pos[:, 20:27], t, weight=emotion_weight)  # BCE
 
                 # gender loss
-                t = selected_gender.type_as(prediction)  # targets
-                gender_weight = torch.tensor(0.3127 / 0.6127).type_as(prediction)
-                gender_loss += (F.binary_cross_entropy_with_logits(prediction_pos[:, 26], t, weight=gender_weight) / (1.0 + gender_weight))  # BCE
+                t = torch.full_like(prediction_pos[:, 27:29], self.cn).type_as(prediction)
+                t[range(n), selected_gender] = self.cp
+                gender_weight = torch.tensor([0.6127, 0.3127]).type_as(prediction)
+                gender_loss += F.binary_cross_entropy_with_logits(prediction_pos[:, 27:29], t, weight=gender_weight)  # BCE
 
             # -------------------------------------------#
             # calculate the confidence loss of whether the target exists
@@ -304,10 +306,10 @@ class YOLOv7Loss(nn.Module):
                 p_obj.append(fg_pred[:, 4:5])
                 p_age.append(fg_pred[:, 5:11])
                 p_race.append(fg_pred[:, 11:14])
-                p_masked.append(fg_pred[:, 14:15])
-                p_skintone.append(fg_pred[:, 15:19])
-                p_emotion.append(fg_pred[:, 19:26])
-                p_gender.append(fg_pred[:, 26:27])
+                p_masked.append(fg_pred[:, 14:16])
+                p_skintone.append(fg_pred[:, 16:20])
+                p_emotion.append(fg_pred[:, 20:27])
+                p_gender.append(fg_pred[:, 27:29])
 
                 grid = torch.stack([gi, gj], dim=1)
                 pxy = (fg_pred[:, :2].sigmoid() * 2. - 0.5 + grid) * self.strides[i]  # / 8.
@@ -342,34 +344,34 @@ class YOLOv7Loss(nn.Module):
             top_k, _ = torch.topk(pair_wise_iou, min(10, pair_wise_iou.shape[1]), dim=1)
             dynamic_ks = torch.clamp(top_k.sum(1).int(), min=1)
 
-            gt_age_per_image = F.one_hot(this_target[:, 5].to(torch.int64), 6).float().unsqueeze(1).repeat(1, pxyxys.shape[0], 1)
-            gt_race_per_image = F.one_hot(this_target[:, 6].to(torch.int64), 3).float().unsqueeze(1).repeat(1, pxyxys.shape[0], 1)
-            gt_masked_per_image = this_target[:, 7].float().unsqueeze(-1).unsqueeze(1).repeat(1, pxyxys.shape[0], 1)
+            gt_age_per_image      = F.one_hot(this_target[:, 5].to(torch.int64), 6).float().unsqueeze(1).repeat(1, pxyxys.shape[0], 1)
+            gt_race_per_image     = F.one_hot(this_target[:, 6].to(torch.int64), 3).float().unsqueeze(1).repeat(1, pxyxys.shape[0], 1)
+            gt_masked_per_image   = F.one_hot(this_target[:, 7].to(torch.int64), 2).float().float().unsqueeze(1).repeat(1, pxyxys.shape[0], 1)
             gt_skintone_per_image = F.one_hot(this_target[:, 8].to(torch.int64), 4).float().unsqueeze(1).repeat(1, pxyxys.shape[0], 1)
-            gt_emotion_per_image = F.one_hot(this_target[:, 9].to(torch.int64), 7).float().unsqueeze(1).repeat(1, pxyxys.shape[0], 1)
-            gt_gender_per_image = this_target[:, 10].float().unsqueeze(-1).unsqueeze(1).repeat(1, pxyxys.shape[0], 1)
+            gt_emotion_per_image  = F.one_hot(this_target[:, 9].to(torch.int64), 7).float().unsqueeze(1).repeat(1, pxyxys.shape[0], 1)
+            gt_gender_per_image   = F.one_hot(this_target[:, 10].to(torch.int64), 2).float().unsqueeze(1).repeat(1, pxyxys.shape[0], 1)
             num_gt = this_target.shape[0]
 
-            age_preds_ = p_age.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_() * p_obj.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
-            race_preds_ = p_race.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_() * p_obj.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
-            masked_preds_ = p_masked.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_() * p_obj.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
+            age_preds_      = p_age.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_() * p_obj.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
+            race_preds_     = p_race.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_() * p_obj.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
+            masked_preds_   = p_masked.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_() * p_obj.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
             skintone_preds_ = p_skintone.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_() * p_obj.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
-            emotion_preds_ = p_emotion.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_() * p_obj.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
-            gender_preds_ = p_gender.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_() * p_obj.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
+            emotion_preds_  = p_emotion.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_() * p_obj.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
+            gender_preds_   = p_gender.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_() * p_obj.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
 
-            age_y = age_preds_.sqrt_()
-            race_y = race_preds_.sqrt_()
-            masked_y = masked_preds_.sqrt_()
+            age_y      = age_preds_.sqrt_()
+            race_y     = race_preds_.sqrt_()
+            masked_y   = masked_preds_.sqrt_()
             skintone_y = skintone_preds_.sqrt_()
-            emotion_y = emotion_preds_.sqrt_()
-            gender_y = gender_preds_.sqrt_()
+            emotion_y  = emotion_preds_.sqrt_()
+            gender_y   = gender_preds_.sqrt_()
 
-            pair_wise_age_loss = F.binary_cross_entropy_with_logits(torch.log(age_y / (1 - age_y)), gt_age_per_image, reduction="none").sum(-1)
-            pair_wise_race_loss = F.binary_cross_entropy_with_logits(torch.log(race_y / (1 - race_y)), gt_race_per_image, reduction="none").sum(-1)
-            pair_wise_masked_loss = F.binary_cross_entropy_with_logits(torch.log(masked_y / (1 - masked_y)), gt_masked_per_image, reduction="none").sum(-1)
+            pair_wise_age_loss      = F.binary_cross_entropy_with_logits(torch.log(age_y / (1 - age_y)), gt_age_per_image, reduction="none").sum(-1)
+            pair_wise_race_loss     = F.binary_cross_entropy_with_logits(torch.log(race_y / (1 - race_y)), gt_race_per_image, reduction="none").sum(-1)
+            pair_wise_masked_loss   = F.binary_cross_entropy_with_logits(torch.log(masked_y / (1 - masked_y)), gt_masked_per_image, reduction="none").sum(-1)
             pair_wise_skintone_loss = F.binary_cross_entropy_with_logits(torch.log(skintone_y / (1 - skintone_y)), gt_skintone_per_image, reduction="none").sum(-1)
-            pair_wise_emotion_loss = F.binary_cross_entropy_with_logits(torch.log(emotion_y / (1 - emotion_y)), gt_emotion_per_image, reduction="none").sum(-1)
-            pair_wise_gender_loss = F.binary_cross_entropy_with_logits(torch.log(gender_y / (1 - gender_y)), gt_gender_per_image, reduction="none").sum(-1)
+            pair_wise_emotion_loss  = F.binary_cross_entropy_with_logits(torch.log(emotion_y / (1 - emotion_y)), gt_emotion_per_image, reduction="none").sum(-1)
+            pair_wise_gender_loss   = F.binary_cross_entropy_with_logits(torch.log(gender_y / (1 - gender_y)), gt_gender_per_image, reduction="none").sum(-1)
 
             del age_preds_
             del race_preds_

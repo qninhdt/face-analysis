@@ -17,7 +17,6 @@ class YOLO(torch.nn.Module):
 
         x = self.head(x)
 
-        if targets is not None:
-            x = self.loss(x, targets)
+        x = self.loss(x, targets)
 
         return x

@@ -5,8 +5,8 @@ import torch
 from lightning import LightningModule
 # Train
 from utils.ema import ModelEMA
-from torch.optim import SGD
-from model.layers.lr_scheduler import CosineWarmupScheduler
+from torch.optim import SGD, Adam
+from torch.optim.lr_scheduler import ExponentialLR
 # Evaluate
 from utils.flops import model_summary
 from model.evaluators.postprocess import postprocess, format_outputs
@@ -35,7 +35,7 @@ class YOLOModule(LightningModule):
         self.ema_model = None
         self.ap50_95 = 0
         self.ap50 = 0
-        self.automatic_optimization = False
+        # self.automatic_optimization = False
 
         # Test
         # if test_cfgs is not None:
@@ -68,16 +68,18 @@ class YOLOModule(LightningModule):
         self.log("lr", self.trainer.optimizers[0].param_groups[0]['lr'], prog_bar=True)
 
         # backward
-        optimizer = self.optimizers()
-        optimizer.zero_grad()
+        # optimizer = self.optimizers()
+        # optimizer.zero_grad()
 
-        self.manual_backward(losses['loss'])
-        optimizer.step()
+        # self.manual_backward(losses['loss'])
+        # optimizer.step()
 
-        if self.hparams.optimizer['ema'] is True:
-            self.ema_model.update(self.model)
+        # if self.hparams.optimizer['ema'] is True:
+        #     self.ema_model.update(self.model)
 
-        self.lr_schedulers().step()
+        # self.lr_schedulers().step()
+
+        return losses['loss']
 
     def validation_step(self, batch, batch_idx):
     #     imgs, labels, img_hw, image_id, img_name = batch
@@ -122,15 +124,12 @@ class YOLOModule(LightningModule):
     #     self.infr_times, self.nms_times = [], []
 
     def configure_optimizers(self):
-        optimizer = SGD(self.parameters(),
-                        lr=self.hparams.optimizer['learning_rate'],
-                        momentum=self.hparams.optimizer['momentum'])
+        optimizer = Adam(self.parameters(),
+                        lr=self.hparams.optimizer['learning_rate'])
         
         total_steps = self.trainer.estimated_stepping_batches
         
-        lr_scheduler = CosineWarmupScheduler(optimizer,
-                                             warmup=self.hparams.optimizer['warmup'] * total_steps,
-                                             max_iters=total_steps)
+        lr_scheduler = ExponentialLR(optimizer, gamma=self.hparams.optimizer['learning_rate'])
         
         return [optimizer], [lr_scheduler]
 

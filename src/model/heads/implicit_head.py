@@ -15,11 +15,11 @@ class ImplicitHead(nn.Module):
         # score      :  1
         # age        :  6
         # race       :  3
-        # masked     :  1
+        # masked     :  2
         # skintone   :  4
         # emotion    :  7
-        # gender     :  1
-        ch = self.n_anchors * (4 + 1 + 6 + 3 + 1 + 4 + 7 + 1)
+        # gender     :  2
+        ch = self.n_anchors * (4 + 1 + 6 + 3 + 2 + 4 + 7 + 2)
 
         self.conv = nn.ModuleList()
         self.ia = nn.ModuleList()
