@@ -31,14 +31,14 @@ model:
       - [[106, 137], [135, 173], [170, 219]] # P4/16
       - [[228, 290], [350, 467], [369, 510]] # P5/32
 
-    box_ratio: 0.2
+    box_ratio: 5
     obj_ratio: 1
-    age_ratio: 0.3
-    race_ratio: 0.3
-    gender_ratio: 0.3
-    masked_ratio: 0.3
-    skintone_ratio: 0.3
-    emotion_ratio: 0.3
+    age_ratio: 0.2
+    race_ratio: 0.2
+    gender_ratio: 0.2
+    masked_ratio: 0.2
+    skintone_ratio: 0.2
+    emotion_ratio: 0.2
 
 image_size: 640
 
