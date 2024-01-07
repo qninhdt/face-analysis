@@ -24,7 +24,7 @@ class YOLOModule(LightningModule):
     ):
         super().__init__()
 
-        self.save_hyperparameters(logger=False)
+        self.save_hyperparameters(logger=False, ignore=['model'])
 
         self.model = model
         self.img_size = image_size
