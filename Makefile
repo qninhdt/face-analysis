@@ -30,7 +30,7 @@ train-yolo: ## Train YOLO model
 	python src/train.py \
 		model=yolo \
 		trainer=gpu \
-		data.batch_size=4
+		data.batch_size=2
 
 eval:
 	python src/eval.py

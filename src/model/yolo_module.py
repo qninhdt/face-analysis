@@ -57,14 +57,14 @@ class YOLOModule(LightningModule):
         losses = self.model(images, targets)
 
         # self.log_dict(losses)
-        self.log("total_loss", losses['loss'], prog_bar=True)
-        self.log("box_loss", losses['box_loss'], prog_bar=True)
-        self.log("age_loss", losses['age_loss'], prog_bar=True)
-        self.log("race_loss", losses['race_loss'], prog_bar=True)
-        self.log("masked_loss", losses['masked_loss'], prog_bar=True)
-        self.log("skintone_loss", losses['skintone_loss'], prog_bar=True)
-        self.log("emotion_loss", losses['emotion_loss'], prog_bar=True)
-        self.log("gender_loss", losses['gender_loss'], prog_bar=True)
+        self.log("train/loss", losses['loss'], prog_bar=True)
+        self.log("train/box_loss", losses['box_loss'], prog_bar=True)
+        self.log("train/age_loss", losses['age_loss'], prog_bar=True)
+        self.log("train/race_loss", losses['race_loss'], prog_bar=True)
+        self.log("train/masked_loss", losses['masked_loss'], prog_bar=True)
+        self.log("train/skintone_loss", losses['skintone_loss'], prog_bar=True)
+        self.log("train/emotion_loss", losses['emotion_loss'], prog_bar=True)
+        self.log("train/gender_loss", losses['gender_loss'], prog_bar=True)
         self.log("lr", self.trainer.optimizers[0].param_groups[0]['lr'], prog_bar=True)
 
         # backward

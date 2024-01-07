@@ -7,8 +7,8 @@ defaults:
 
 model_checkpoint:
   dirpath: ${paths.root_dir}/checkpoints
-  filename: "epoch_{epoch:03d}"
-  monitor: "val/acc"
+  filename: "{epoch:03d}"
+  monitor: "train/loss"
   mode: "max"
   save_last: True
   every_n_epochs: 1
