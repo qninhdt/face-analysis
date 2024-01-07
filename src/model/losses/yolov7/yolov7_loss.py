@@ -210,7 +210,7 @@ class YOLOv7Loss(nn.Module):
 
                 # gender loss
                 t = selected_gender.type_as(prediction)  # targets
-                gender_weight = torch.tensor(0.6127 / 0.3127).type_as(prediction)
+                gender_weight = torch.tensor(0.3127 / 0.6127).type_as(prediction)
                 gender_loss += (F.binary_cross_entropy_with_logits(prediction_pos[:, 26], t, weight=gender_weight) / (1.0 + gender_weight))  # BCE
 
             # -------------------------------------------#
