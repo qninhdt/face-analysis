@@ -381,13 +381,13 @@ class YOLOv7Loss(nn.Module):
             del gender_preds_
 
             cost = (
-                    pair_wise_age_loss
-                    + pair_wise_race_loss
-                    + pair_wise_masked_loss
-                    + pair_wise_skintone_loss
-                    + pair_wise_emotion_loss
-                    + pair_wise_gender_loss
-                    + 3.0 * pair_wise_iou_loss
+                pair_wise_age_loss
+                + pair_wise_race_loss
+                + pair_wise_masked_loss
+                + pair_wise_skintone_loss
+                + pair_wise_emotion_loss
+                + pair_wise_gender_loss
+                + 5.0 * pair_wise_iou_loss
             )
 
             # Dynamic k

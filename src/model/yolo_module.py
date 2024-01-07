@@ -129,7 +129,7 @@ class YOLOModule(LightningModule):
         
         total_steps = self.trainer.estimated_stepping_batches
         
-        lr_scheduler = ExponentialLR(optimizer, gamma=self.hparams.optimizer['learning_rate'])
+        lr_scheduler = ExponentialLR(optimizer, gamma=self.hparams.optimizer['gamma'])
         
         return [optimizer], [lr_scheduler]
 
