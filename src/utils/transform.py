@@ -55,12 +55,9 @@ class Normalize(nn.Module):
 
         h, w = boxes.canvas_size
 
-        scale = torch.tensor([w, h, w, h], dtype=torch.float32)
-
         # convert XYWH to CXCYWH        
-        nboxes = torch.clone(boxes) / scale
-        nboxes[:, 0:2] += nboxes[:, 2:4] / 2
-
-        sample['nboxes'] = nboxes
+        boxes = boxes.to(torch.float32)
+        boxes[:, 0] += boxes[:, 2] / 2
+        boxes[:, 1] += boxes[:, 3] / 2
 
         return T.Compose([T.Normalize(self.mean, self.std)])(sample)
