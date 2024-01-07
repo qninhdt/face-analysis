@@ -16,6 +16,7 @@ class PIXTAFaceDataset(Dataset):
         super().__init__()
         
         self.data_dir = Path(data_dir)
+        self.type = type
     
         with open(self.data_dir / "labels.json") as f:
             labels = json.load(f)
@@ -61,4 +62,6 @@ class PIXTAFaceDataset(Dataset):
         return sample
 
     def __len__(self) -> int:
+        if self.type == "train":
+            return 1
         return len(self.targets)
