@@ -62,6 +62,4 @@ class PIXTAFaceDataset(Dataset):
         return sample
 
     def __len__(self) -> int:
-        if self.type == "train":
-            return 1
         return len(self.targets)
