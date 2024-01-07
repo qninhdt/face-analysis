@@ -53,8 +53,6 @@ class Normalize(nn.Module):
     def forward(self, sample: Dict[str, Any]) -> Dict[str, Any]:
         boxes = sample['boxes']
 
-        h, w = boxes.canvas_size
-
         # convert XYWH to CXCYWH        
         boxes = boxes.to(torch.float32)
         boxes[:, 0] += boxes[:, 2] / 2
