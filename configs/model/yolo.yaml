@@ -31,7 +31,7 @@ model:
       - [[106, 137], [135, 173], [170, 219]] # P4/16
       - [[228, 290], [350, 467], [369, 510]] # P5/32
 
-    box_ratio: 5
+    box_ratio: 0.1
     obj_ratio: 1
     age_ratio: 0.2
     race_ratio: 0.2
@@ -46,7 +46,7 @@ nms_threshold: 0.65
 confidence_threshold: 0.01
 
 optimizer:
-  learning_rate: 0.01
+  learning_rate: 0.001
   gamma: 0.9
   # momentum: 0.9
   # weight_decay: 0.0005
