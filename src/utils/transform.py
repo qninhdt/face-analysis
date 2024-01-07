@@ -59,5 +59,8 @@ class Normalize(nn.Module):
         boxes = boxes.to(torch.float32)
         boxes[:, 0] += boxes[:, 2] / 2
         boxes[:, 1] += boxes[:, 3] / 2
+        boxes.format = 'CXCWH'
+
+        sample['boxes'] = boxes
 
         return T.Compose([T.Normalize(self.mean, self.std)])(sample)
