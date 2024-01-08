@@ -10,10 +10,8 @@ def postprocess(predictions, conf_thre=0.7, nms_thre=0.45, class_agnostic=False)
 
     output = [None for _ in range(predictions.shape[0])]
     for i in range(predictions.shape[0]):
-        image_pred = predictions[i]
-        # If none are remaining => process next image
-        if not image_pred.shape[0]:
-            continue
+        image_pred = predictions[i]     
+
         # Get class and correspond score
         age_conf, age_pred = torch.max(image_pred[:, 5:11], 1, keepdim=True)
         race_conf, race_pred = torch.max(image_pred[:, 11:14], 1, keepdim=True)
@@ -39,8 +37,8 @@ def postprocess(predictions, conf_thre=0.7, nms_thre=0.45, class_agnostic=False)
 
         if detections.shape[0] > max_nms:
             detections = detections[:max_nms]
-        if not detections.size(0):
-            continue
+        # if not detections.size(0):
+        #     continue
 
         if class_agnostic:
             nms_out_index = torchvision.ops.nms(
@@ -52,7 +50,7 @@ def postprocess(predictions, conf_thre=0.7, nms_thre=0.45, class_agnostic=False)
             nms_out_index = torchvision.ops.batched_nms(
                 detections[:, :4],
                 detections[:, 4],
-                detections[:, 5],
+                torch.zeros_like(detections[:, 5]),
                 nms_thre,
             )
 
@@ -106,7 +104,7 @@ def demo_postprocess(predictions, conf_thre=0.7, nms_thre=0.45, class_agnostic=F
             nms_out_index = torchvision.ops.batched_nms(
                 detections[:, :4],
                 detections[:, 4],
-                detections[:, 5],
+                torch.zeros_like(detections[:, 5]),
                 nms_thre,
             )
 

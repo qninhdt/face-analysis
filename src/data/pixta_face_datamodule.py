@@ -30,7 +30,7 @@ class PIXTAFaceDataModule(LightningDataModule):
         self.save_hyperparameters(logger=False)
 
         # data transformations
-        normalize = Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        normalize = Normalize(mean=[0.6596, 0.6235, 0.5875], std=[0.2272, 0.2248, 0.2345])
         
         self.train_transforms = T.Compose([
             # RandomCropWithoutLossingBoxes(),
@@ -40,9 +40,9 @@ class PIXTAFaceDataModule(LightningDataModule):
             T.RandomGrayscale(p=0.1),
             T.Resize(IMAGE_SIZE, antialias=True),
             T.ColorJitter(brightness=[0.5, 1.25]),
-            # T.RandomApply([
-            #     T.GaussianBlur(kernel_size=(7, 7), sigma=(0.1, 2))
-            # ], p=0.5),
+            T.RandomApply([
+                T.GaussianBlur(kernel_size=(7, 7), sigma=(0.1, 2))
+            ], p=0.5),
             T.ToDtype(torch.float32, scale=True),
             normalize,
         ])
