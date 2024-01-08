@@ -47,6 +47,7 @@ class PIXTAFaceDataset(Dataset):
         skintone = torch.tensor([face['skintone'] for face in target['faces']], dtype=torch.int32)
         boxes = tv_tensors.BoundingBoxes([face['box'] for face in target['faces']], format='xywh',
                                          canvas_size=(h, w))
+        area = torch.tensor([face['box'][2] * face['box'][3] for face in target['faces']], dtype=torch.float32)
 
         sample = {
             'image': image,
@@ -57,6 +58,7 @@ class PIXTAFaceDataset(Dataset):
             'masked': masked,
             'skintone': skintone,
             'boxes': boxes,
+            'area': area,
         }
 
         return sample

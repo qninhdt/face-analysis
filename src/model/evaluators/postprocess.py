@@ -15,12 +15,28 @@ def postprocess(predictions, conf_thre=0.7, nms_thre=0.45, class_agnostic=False)
         if not image_pred.shape[0]:
             continue
         # Get class and correspond score
-        class_conf, class_pred = torch.max(image_pred[:, 5:], 1, keepdim=True)
-        confidence = image_pred[:, 4] * class_conf.squeeze()
+        age_conf, age_pred = torch.max(image_pred[:, 5:11], 1, keepdim=True)
+        race_conf, race_pred = torch.max(image_pred[:, 11:14], 1, keepdim=True)
+        masked_conf, masked_pred = torch.max(image_pred[:, 14:16], 1, keepdim=True)
+        skintone_conf, skintone_pred = torch.max(image_pred[:, 16:20], 1, keepdim=True)
+        emotion_conf, emotion_pred = torch.max(image_pred[:, 20:27], 1, keepdim=True)
+        gender_conf, gender_pred = torch.max(image_pred[:, 27:29], 1, keepdim=True)
+        box_pred = image_pred[:, :4]
+        
+        confidence = image_pred[:, 4]
         conf_mask = (confidence >= conf_thre).squeeze()
+        
         # Detections ordered as (x1, y1, x2, y2, confidence, class_pred)
-        detections = torch.cat((image_pred[:, :4], confidence.unsqueeze(-1), class_pred.float()), 1)
+        detections = torch.cat((image_pred[:, :4], confidence.unsqueeze(-1), 
+                                age_pred.float(),
+                                race_pred.float(),
+                                masked_pred.float(),
+                                skintone_pred.float(),
+                                emotion_pred.float(),
+                                gender_pred.float()), 1)
+        
         detections = detections[conf_mask]
+
         if detections.shape[0] > max_nms:
             detections = detections[:max_nms]
         if not detections.size(0):
@@ -43,7 +59,17 @@ def postprocess(predictions, conf_thre=0.7, nms_thre=0.45, class_agnostic=False)
         detections = detections[nms_out_index]
         if detections.shape[0] > max_det:  # limit detections
             detections = detections[:max_det]
-        output[i] = detections
+
+        output[i] = {
+            "boxes": detections[:, :4],
+            "scores": detections[:, 4],
+            "age": detections[:, 5],
+            "race": detections[:, 6],
+            "masked": detections[:, 7],
+            "skintone": detections[:, 8],
+            "emotion": detections[:, 9],
+            "gender": detections[:, 10],
+        }
 
     return output
 

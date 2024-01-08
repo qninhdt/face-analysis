@@ -95,13 +95,13 @@ class YOLOv7Loss(nn.Module):
             # preds: [batch_size, all predictions, n_ch]
             predictions = torch.cat(preds, 1)
             # from (cx,cy,w,h) to (x,y,w,h)
-            box_corner = predictions.new(predictions.shape)
-            box_corner = box_corner[:, :, 0:4]
-            box_corner[:, :, 0] = predictions[:, :, 0] - predictions[:, :, 2] / 2
-            box_corner[:, :, 1] = predictions[:, :, 1] - predictions[:, :, 3] / 2
-            box_corner[:, :, 2] = predictions[:, :, 2]
-            box_corner[:, :, 3] = predictions[:, :, 3]
-            predictions[:, :, :4] = box_corner[:, :, :4]
+            # box_corner = predictions.new(predictions.shape)
+            # box_corner = box_corner[:, :, 0:4]
+            # box_corner[:, :, 0] = predictions[:, :, 0] - predictions[:, :, 2] / 2
+            # box_corner[:, :, 1] = predictions[:, :, 1] - predictions[:, :, 3] / 2
+            # box_corner[:, :, 2] = predictions[:, :, 2]
+            # box_corner[:, :, 3] = predictions[:, :, 3]
+            # predictions[:, :, :4] = box_corner[:, :, :4]
             return predictions
 
         # Compute loss

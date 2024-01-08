@@ -31,7 +31,7 @@ train-yolo: ## Train YOLO model
 		model=yolo \
 		trainer=gpu \
 		data.batch_size=2 \
-		ckpt_path="./checkpoints/last.ckpt"
+		trainer.fast_dev_run=5
 
 eval:
 	python src/eval.py
