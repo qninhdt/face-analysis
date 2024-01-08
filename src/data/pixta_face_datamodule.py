@@ -92,10 +92,10 @@ class PIXTAFaceDataModule(LightningDataModule):
         return self._create_dataloader(self.data_train, self.batch_size_per_device)
 
     def val_dataloader(self) -> DataLoader[Any]:
-        return self._create_dataloader(self.data_val, self.batch_size_per_device)
+        return self._create_dataloader(self.data_val, 1)
 
     def test_dataloader(self) -> DataLoader[Any]:
-        return self._create_dataloader(self.data_test, self.batch_size_per_device)
+        return self._create_dataloader(self.data_test, 1)
 
     def _create_dataloader(self, dataset: Dataset, batch_size: int) -> DataLoader[Any]:
         return DataLoader(
