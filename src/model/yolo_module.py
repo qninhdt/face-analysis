@@ -10,7 +10,7 @@ from torch.optim.lr_scheduler import ExponentialLR
 # Evaluate
 from utils.flops import model_summary
 from utils.metrics import AveragePrecision
-from model.evaluators.postprocess import postprocess
+from model.evaluators.postprocess import postprocess, match_pred_boxes
 
 class YOLOModule(LightningModule):
 
@@ -73,32 +73,14 @@ class YOLOModule(LightningModule):
         self.log("train/gender_loss", losses['gender_loss'], prog_bar=True)
         self.log("lr", self.trainer.optimizers[0].param_groups[0]['lr'], prog_bar=True)
 
-        # backward
-        # optimizer = self.optimizers()
-        # optimizer.zero_grad()
-
-        # self.manual_backward(losses['loss'])
-        # optimizer.step()
-
-        # if self.hparams.optimizer['ema'] is True:
-        #     self.ema_model.update(self.model)
-
-        # self.lr_schedulers().step()
-
         return losses['loss']
 
     def on_validation_start(self) -> None:
         self.val_AP.reset()
 
     def validation_step(self, batch, batch_idx):
-        # imgs, labels, img_hw, image_id, img_name = batch
         images, targets = batch
 
-    #     if self.ema_model is not None:
-    #         model = self.ema_model.ema
-    #     else:
-    #         model = self.model
-        
         # inference
         start_time = time.time()
         predictions = self.model(images, targets)
@@ -116,6 +98,8 @@ class YOLOModule(LightningModule):
             metrics = {k: v.to(self.device) for k, v in metrics.items()}
 
             self.log("val/AP", metrics['map'], prog_bar=True)
+
+
 
     def on_validation_end(self) -> None:
         average_ifer_time = torch.tensor(self.infr_times, dtype=torch.float32).mean().item()
@@ -159,11 +143,16 @@ class YOLOModule(LightningModule):
 
         self.test_AP(predictions, targets)
 
+        match_idx = match_pred_boxes(predictions, targets)
+        print("match_idx", match_idx)
+
         if batch_idx == self.trainer.num_test_batches[0] - 1:
             metrics = self.test_AP.compute()
             metrics = {k: v.to(self.device) for k, v in metrics.items()}
 
             self.log("test/AP", metrics['map'], prog_bar=True)
+
+            
 
     def on_test_epoch_end(self):
         average_ifer_time = torch.tensor(self.infr_times, dtype=torch.float32).mean().item()

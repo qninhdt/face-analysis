@@ -33,16 +33,16 @@ model:
 
     box_ratio: 0.1
     obj_ratio: 1
-    age_ratio: 0.05
-    race_ratio: 0.05
-    gender_ratio: 0.05
-    masked_ratio: 0.05
-    skintone_ratio: 0.05
-    emotion_ratio: 0.05
+    age_ratio: 0.2
+    race_ratio: 0.2
+    gender_ratio: 0.2
+    masked_ratio: 0.2
+    skintone_ratio: 0.2
+    emotion_ratio: 0.2
 
 image_size: 640
 
-nms_threshold: 0.65
+nms_threshold: 0.5
 confidence_threshold: 0.01
 
 optimizer:

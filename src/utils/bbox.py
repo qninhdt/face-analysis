@@ -62,14 +62,21 @@ def xyxy2xywh(bboxes):
     y[:, 3] = bboxes[:, 3] - bboxes[:, 1]
     return y
 
-
-def xyxy2cxcywh(bboxes):
-    # Convert nx4 boxes from [x1, y1, x2, y2] to [x, y, w, h] where x1y1=top-left, x2y2=bottom-right
+def xywh2xyxy(bboxes):
+    # Convert nx4 boxes from [x1, y1, w, h] to [x1, y1, x2, y2] where x1y1=top-left, x2y2=bottom-right
     y = bboxes.clone() if isinstance(bboxes, torch.Tensor) else np.copy(bboxes)
-    y[:, 0] = (bboxes[:, 0] + bboxes[:, 2]) / 2  # x center
-    y[:, 1] = (bboxes[:, 1] + bboxes[:, 3]) / 2  # y center
-    y[:, 2] = bboxes[:, 2] - bboxes[:, 0]  # width
-    y[:, 3] = bboxes[:, 3] - bboxes[:, 1]  # height
+    y[:, 2] = bboxes[:, 0] + bboxes[:, 2]
+    y[:, 3] = bboxes[:, 1] + bboxes[:, 3]
+    return y
+
+
+def cxcywh2xyxy(bboxes):
+    # Convert nx4 boxes from [cx, cy, w, h] to [x1, y1, x2, y2] where x1y1=top-left, x2y2=bottom-right
+    y = bboxes.clone() if isinstance(bboxes, torch.Tensor) else np.copy(bboxes)
+    y[:, 0] = bboxes[:, 0] - bboxes[:, 2] / 2
+    y[:, 1] = bboxes[:, 1] - bboxes[:, 3] / 2
+    y[:, 2] = bboxes[:, 0] + bboxes[:, 2] / 2
+    y[:, 3] = bboxes[:, 1] + bboxes[:, 3] / 2
     return y
 
 

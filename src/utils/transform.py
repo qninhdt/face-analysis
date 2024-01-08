@@ -15,9 +15,13 @@ class SquarePad(nn.Module):
         w = image.shape[2]
 
         if h > w:
-            pad = T.Pad(((h - w) // 2, 0))
+            r = (h - w) // 2
+            l = (h - w) - r
+            pad = T.Pad((l, 0, r, 0))
         else:
-            pad = T.Pad((0, (w - h) // 2))
+            t = (w - h) // 2
+            b = (w - h) - t
+            pad = T.Pad((0, t, 0, b))
 
         return T.Compose([pad])(sample)
     

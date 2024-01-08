@@ -2,8 +2,8 @@
 
 defaults:
   - _self_
-  - data: unclean_cctv
-  - model: detr
+  - data: pixta_face
+  - model: yolo
   - logger: null
   - trainer: gpu
   - paths: default
