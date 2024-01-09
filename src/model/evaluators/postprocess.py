@@ -3,8 +3,9 @@ import torchvision
 import numpy as np
 from utils.bbox import cxcywh2xyxy, box_iou
 
+IMAGE_SIZE = 640
 
-def postprocess(predictions, conf_thre=0.5, nms_thre=0.5):
+def postprocess(predictions, conf_thre=0.5, nms_thre=0.5, origin_sizes=None):
     max_det = 300  # maximum number of detections per image
     max_nms = 10000  # maximum number of boxes into torchvision.ops.nms()
 
@@ -50,6 +51,19 @@ def postprocess(predictions, conf_thre=0.5, nms_thre=0.5):
         detections = detections[nms_out_index]
         if detections.shape[0] > max_det:  # limit detections
             detections = detections[:max_det]
+
+        # convert to original size
+        if origin_sizes is not None:
+            size = origin_sizes[i]
+            scale = torch.tensor([max(size[0], size[1])] * 4, device=detections.device, dtype=torch.float32)
+            detections[:, :4] = detections[:, :4] * (scale / IMAGE_SIZE)
+
+            for box in detections[:, :4]:
+
+                if size[0] < size[1]:
+                    box[0] -= (size[1] - size[0]) / 2
+                else:
+                    box[1] -= (size[0] - size[1]) / 2
 
         output[i] = {
             "boxes": detections[:, :4],

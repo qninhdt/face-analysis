@@ -9,7 +9,10 @@ from numpy import random
 
 class SquarePad(nn.Module):
     def forward(self, sample: Dict[str, Any]) -> Dict[str, Any]:
-        image = sample['image']
+        if type(sample) != torch.Tensor:
+            image = sample['image']
+        else:
+            image = sample
 
         h = image.shape[1]
         w = image.shape[2]

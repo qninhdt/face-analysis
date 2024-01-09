@@ -35,7 +35,14 @@ train-yolo: ## Train YOLO model
 
 eval-yolo:
 	python src/eval.py \
-		model=yolo \
+		model=yolo_nano \
 		trainer=gpu \
 		data.batch_size=2 \
-		ckpt_path="./checkpoints/epoch\=056.ckpt"
+		ckpt_path="./checkpoints/yolo_nano/epoch\=097.ckpt"
+
+submit-yolo:
+	python src/submit.py \
+		model=yolo_nano \
+		trainer=gpu \
+		data=public_pixta_face \
+		ckpt_path="./checkpoints/yolo_nano/epoch\=097.ckpt"

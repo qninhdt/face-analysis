@@ -10,6 +10,7 @@ from torch.optim.lr_scheduler import ExponentialLR
 # Evaluate
 from utils.flops import model_summary
 from utils.metrics import AveragePrecision
+from torchmetrics.classification import Accuracy
 from model.evaluators.postprocess import postprocess, match_pred_boxes
 
 class YOLOModule(LightningModule):
@@ -39,8 +40,23 @@ class YOLOModule(LightningModule):
 
         # metrics
         iou_types = [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
+        
         self.val_AP = AveragePrecision('cxcywh', 'bbox', iou_types)
+
+        self.val_age_acc = Accuracy(task='multiclass', num_classes=6)
+        self.val_race_acc = Accuracy(task='multiclass', num_classes=3)
+        self.val_masked_acc = Accuracy(task='multiclass', num_classes=2)
+        self.val_skintone_acc = Accuracy(task='multiclass', num_classes=4)
+        self.val_emotion_acc = Accuracy(task='multiclass', num_classes=7)
+        self.val_gender_acc = Accuracy(task='multiclass', num_classes=2)
+
         self.test_AP = AveragePrecision('cxcywh', 'bbox', iou_types)
+        self.test_age_acc = Accuracy(task='multiclass', num_classes=6)
+        self.test_race_acc = Accuracy(task='multiclass', num_classes=3)
+        self.test_masked_acc = Accuracy(task='multiclass', num_classes=2)
+        self.test_skintone_acc = Accuracy(task='multiclass', num_classes=4)
+        self.test_emotion_acc = Accuracy(task='multiclass', num_classes=7)
+        self.test_gender_acc = Accuracy(task='multiclass', num_classes=2)
 
         # Test
         # if test_cfgs is not None:
@@ -93,12 +109,31 @@ class YOLOModule(LightningModule):
 
         self.val_AP(predictions, targets)
 
+        match_idx = match_pred_boxes(predictions, targets)
+        
+        for i in range(len(predictions)):
+            if match_idx[i].shape[0] == 0:
+                continue
+            self.val_age_acc(predictions[i]['age'][match_idx[i][:, 0]], targets[i]['age'][match_idx[i][:, 1]])
+            self.val_race_acc(predictions[i]['race'][match_idx[i][:, 0]], targets[i]['race'][match_idx[i][:, 1]])
+            self.val_masked_acc(predictions[i]['masked'][match_idx[i][:, 0]], targets[i]['masked'][match_idx[i][:, 1]])
+            self.val_skintone_acc(predictions[i]['skintone'][match_idx[i][:, 0]], targets[i]['skintone'][match_idx[i][:, 1]])
+            self.val_emotion_acc(predictions[i]['emotion'][match_idx[i][:, 0]], targets[i]['emotion'][match_idx[i][:, 1]])
+            self.val_gender_acc(predictions[i]['gender'][match_idx[i][:, 0]], targets[i]['gender'][match_idx[i][:, 1]])
+
         if batch_idx == self.trainer.num_val_batches[0] - 1:
             metrics = self.val_AP.compute()
             metrics = {k: v.to(self.device) for k, v in metrics.items()}
 
             self.log("val/AP", metrics['map'], prog_bar=True)
 
+            self.log("val/AP", metrics['map'], prog_bar=True)
+            self.log("val/age_acc", self.val_age_acc.compute(), prog_bar=True)
+            self.log("val/race_acc", self.val_race_acc.compute(), prog_bar=True)
+            self.log("val/masked_acc", self.val_masked_acc.compute(), prog_bar=True)
+            self.log("val/skintone_acc", self.val_skintone_acc.compute(), prog_bar=True)
+            self.log("val/emotion_acc", self.val_emotion_acc.compute(), prog_bar=True)
+            self.log("val/gender_acc", self.val_gender_acc.compute(), prog_bar=True)
 
 
     def on_validation_end(self) -> None:
@@ -120,10 +155,11 @@ class YOLOModule(LightningModule):
     def on_train_end(self) -> None:
         pass
 
-    def forward(self, imgs):
+    def forward(self, x):
+        imgs, labels = x if isinstance(x, tuple) else (x, None)
         self.model.eval()
         detections = self.model(imgs)
-        return detections
+        return detections, labels
     
     def on_test_start(self) -> None:
         self.test_AP.reset()
@@ -144,14 +180,28 @@ class YOLOModule(LightningModule):
         self.test_AP(predictions, targets)
 
         match_idx = match_pred_boxes(predictions, targets)
-        print("match_idx", match_idx)
+        
+        for i in range(len(predictions)):
+            if match_idx[i].shape[0] == 0:
+                continue
+            self.test_age_acc(predictions[i]['age'][match_idx[i][:, 0]], targets[i]['age'][match_idx[i][:, 1]])
+            self.test_race_acc(predictions[i]['race'][match_idx[i][:, 0]], targets[i]['race'][match_idx[i][:, 1]])
+            self.test_masked_acc(predictions[i]['masked'][match_idx[i][:, 0]], targets[i]['masked'][match_idx[i][:, 1]])
+            self.test_skintone_acc(predictions[i]['skintone'][match_idx[i][:, 0]], targets[i]['skintone'][match_idx[i][:, 1]])
+            self.test_emotion_acc(predictions[i]['emotion'][match_idx[i][:, 0]], targets[i]['emotion'][match_idx[i][:, 1]])
+            self.test_gender_acc(predictions[i]['gender'][match_idx[i][:, 0]], targets[i]['gender'][match_idx[i][:, 1]])
 
         if batch_idx == self.trainer.num_test_batches[0] - 1:
             metrics = self.test_AP.compute()
             metrics = {k: v.to(self.device) for k, v in metrics.items()}
 
             self.log("test/AP", metrics['map'], prog_bar=True)
-
+            self.log("test/age_acc", self.test_age_acc.compute(), prog_bar=True)
+            self.log("test/race_acc", self.test_race_acc.compute(), prog_bar=True)
+            self.log("test/masked_acc", self.test_masked_acc.compute(), prog_bar=True)
+            self.log("test/skintone_acc", self.test_skintone_acc.compute(), prog_bar=True)
+            self.log("test/emotion_acc", self.test_emotion_acc.compute(), prog_bar=True)
+            self.log("test/gender_acc", self.test_gender_acc.compute(), prog_bar=True)
             
 
     def on_test_epoch_end(self):

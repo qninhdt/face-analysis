@@ -15,8 +15,17 @@ class DecoupledHead(nn.Module):
     ):
         super().__init__()
         self.n_anchors = n_anchors
-        self.num_classes = num_classes
-        ch = self.n_anchors * self.num_classes
+        
+        # box        :  4
+        # score      :  1
+        # age        :  6
+        # race       :  3
+        # masked     :  2
+        # skintone   :  4
+        # emotion    :  7
+        # gender     :  2
+        ch = self.n_anchors * (4 + 1 + 6 + 3 + 2 + 4 + 7 + 2)
+        
         conv = BaseConv
         self.stems = nn.ModuleList()
         self.cls_convs = nn.ModuleList()

@@ -1,0 +1,2 @@
+_target_: data.pp_pixta_face_dataset.PPPIXTAFaceDataset
+data_dir: ${paths.data_dir}/public_pixta_face

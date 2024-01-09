@@ -3,7 +3,7 @@
 defaults:
   - _self_
   - data: pixta_face
-  - model: yolo
+  - model: yolo_nano
   - logger: null
   - trainer: gpu
   - paths: default

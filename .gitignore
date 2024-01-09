@@ -2,4 +2,6 @@ datasets
 .vscode
 logs
 checkpoints
+answer.csv
+answer.zip
 __pycache__
