@@ -32,13 +32,13 @@ model:
       - [[228, 290], [350, 467], [369, 510]] # P5/32
 
     box_ratio: 0.1
-    obj_ratio: 3
-    age_ratio: 0.1
-    race_ratio: 0.1
-    gender_ratio: 0.1
-    masked_ratio: 0.05
-    skintone_ratio: 0.1
-    emotion_ratio: 0.1
+    obj_ratio: 2
+    age_ratio: 0.02
+    race_ratio: 0.02
+    gender_ratio: 0.02
+    masked_ratio: 0.02
+    skintone_ratio: 0.02
+    emotion_ratio: 0.02
 
 image_size: 640
 
