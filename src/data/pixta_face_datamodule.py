@@ -35,11 +35,11 @@ class PIXTAFaceDataModule(LightningDataModule):
         self.train_transforms = T.Compose([
             # RandomCropWithoutLossingBoxes(),
             SquarePad(),
-            T.RandomRotation(degrees=[-30, 30]),
+            # T.RandomRotation(degrees=[-15, 15]),
             T.RandomHorizontalFlip(p=0.5),
             # T.RandomGrayscale(p=0.1),
             T.Resize(IMAGE_SIZE, antialias=True),
-            T.ColorJitter(brightness=[0.5, 1.25]),
+            # T.ColorJitter(brightness=[0.5, 1.25]),
             # T.RandomApply([
             #     T.GaussianBlur(kernel_size=(7, 7), sigma=(0.1, 2))
             # ], p=0.5),

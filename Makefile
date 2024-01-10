@@ -42,7 +42,7 @@ eval-yolo:
 
 submit-yolo:
 	python src/submit.py \
-		model=yolo_nano \
+		model=yolo \
 		trainer=gpu \
 		data=public_pixta_face \
-		ckpt_path="./checkpoints/yolo_nano/epoch\=097.ckpt"
+		ckpt_path="./checkpoints/yolo/epoch\=097.ckpt"

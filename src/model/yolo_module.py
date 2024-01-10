@@ -144,7 +144,8 @@ class YOLOModule(LightningModule):
 
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(),
-                        lr=self.hparams.optimizer['learning_rate'])
+                        lr=self.hparams.optimizer['learning_rate'],
+                        weight_decay=self.hparams.optimizer['weight_decay'])
         
         # total_steps = self.trainer.estimated_stepping_batches
         
