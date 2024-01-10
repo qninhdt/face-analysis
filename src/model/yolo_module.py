@@ -81,6 +81,7 @@ class YOLOModule(LightningModule):
         # self.log_dict(losses)
         self.log("train/loss", losses['loss'], prog_bar=True)
         self.log("train/box_loss", losses['box_loss'], prog_bar=True)
+        self.log("train/obj_loss", losses['obj_loss'], prog_bar=True)
         self.log("train/age_loss", losses['age_loss'], prog_bar=True)
         self.log("train/race_loss", losses['race_loss'], prog_bar=True)
         self.log("train/masked_loss", losses['masked_loss'], prog_bar=True)

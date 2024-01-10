@@ -33,12 +33,12 @@ model:
 
     box_ratio: 0.1
     obj_ratio: 3
-    age_ratio: 0.3
-    race_ratio: 0.3
-    gender_ratio: 0.3
-    masked_ratio: 0.1
-    skintone_ratio: 0.3
-    emotion_ratio: 0.3
+    age_ratio: 0.1
+    race_ratio: 0.1
+    gender_ratio: 0.1
+    masked_ratio: 0.05
+    skintone_ratio: 0.1
+    emotion_ratio: 0.1
 
 image_size: 640
 
