@@ -21,7 +21,7 @@ model:
   head:
     _target_: model.heads.implicit_head.ImplicitHead
     num_anchors: 3
-    in_channels: [512, 1024, 2048]
+    in_channels: [128, 256, 512]
 
   loss:
     _target_: model.losses.yolov7.yolov7_loss.YOLOv7Loss

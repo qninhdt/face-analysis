@@ -5,7 +5,7 @@ from utils.bbox import cxcywh2xyxy, box_iou
 
 IMAGE_SIZE = 640
 
-def postprocess(predictions, conf_thre=0.5, nms_thre=0.5, origin_sizes=None):
+def postprocess(predictions, conf_thre=0.6, nms_thre=0.35, origin_sizes=None):
     max_det = 300  # maximum number of detections per image
     max_nms = 10000  # maximum number of boxes into torchvision.ops.nms()
 
