@@ -33,7 +33,7 @@ class PIXTAFaceDataModule(LightningDataModule):
         normalize = Normalize(mean=[0.6596, 0.6235, 0.5875], std=[0.2272, 0.2248, 0.2345])
         
         self.train_transforms = T.Compose([
-            # RandomCropWithoutLossingBoxes(),
+            RandomCropWithoutLossingBoxes(),
             SquarePad(),
             # T.RandomRotation(degrees=[-15, 15]),
             T.RandomHorizontalFlip(p=0.5),
