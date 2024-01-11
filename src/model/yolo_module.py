@@ -114,24 +114,26 @@ class YOLOModule(LightningModule):
         self.lr_schedulers().step()
 
         if batch_idx == self.trainer.num_training_batches - 1:
-            self.log("train/loss", self.mean_loss, prog_bar=True)
-            self.log("train/box_loss", self.mean_box_loss, prog_bar=True)
-            self.log("train/obj_loss", self.mean_obj_loss, prog_bar=True)
-            self.log("train/age_loss", self.mean_age_loss, prog_bar=True)
-            self.log("train/race_loss", self.mean_race_loss, prog_bar=True)
-            self.log("train/masked_loss", self.mean_masked_loss, prog_bar=True)
-            self.log("train/skintone_loss", self.mean_skintone_loss, prog_bar=True)
-            self.log("train/emotion_loss", self.mean_emotion_loss, prog_bar=True)
-            self.log("train/gender_loss", self.mean_gender_loss, prog_bar=True)
-            self.mean_loss.reset()
-            self.mean_box_loss.reset()
-            self.mean_obj_loss.reset()
-            self.mean_age_loss.reset()
-            self.mean_race_loss.reset()
-            self.mean_masked_loss.reset()
-            self.mean_skintone_loss.reset()
-            self.mean_emotion_loss.reset()
-            self.mean_gender_loss.reset()
+            self.log("train/loss", self.mean_loss, prog_bar=True, sync_dist=True)
+            self.log("train/box_loss", self.mean_box_loss, prog_bar=True, sync_dist=True)
+            self.log("train/obj_loss", self.mean_obj_loss, prog_bar=True, sync_dist=True)
+            self.log("train/age_loss", self.mean_age_loss, prog_bar=True, sync_dist=True)
+            self.log("train/race_loss", self.mean_race_loss, prog_bar=True, sync_dist=True)
+            self.log("train/masked_loss", self.mean_masked_loss, prog_bar=True, sync_dist=True)
+            self.log("train/skintone_loss", self.mean_skintone_loss, prog_bar=True, sync_dist=True)
+            self.log("train/emotion_loss", self.mean_emotion_loss, prog_bar=True, sync_dist=True)
+            self.log("train/gender_loss", self.mean_gender_loss, prog_bar=True, sync_dist=True)
+            
+    def on_train_end(self):
+        self.mean_loss.reset()
+        self.mean_box_loss.reset()
+        self.mean_obj_loss.reset()
+        self.mean_age_loss.reset()
+        self.mean_race_loss.reset()
+        self.mean_masked_loss.reset()
+        self.mean_skintone_loss.reset()
+        self.mean_emotion_loss.reset()
+        self.mean_gender_loss.reset()
 
     def validation_step(self, batch, batch_idx):
         images, targets = batch
@@ -145,10 +147,8 @@ class YOLOModule(LightningModule):
         start_time = time.time()
         predictions = postprocess(predictions, self.confidence_threshold, self.nms_threshold)
         self.nms_times.append(time.time() - start_time)
-
-        # predictions = self.to_cpu(predictions)
-        # targets = self.to_cpu(targets)
-        self.val_AP(predictions, targets)
+        
+        self.val_AP.update(predictions, targets)
 
         match_idx = match_pred_boxes(predictions, targets)
         
@@ -166,19 +166,13 @@ class YOLOModule(LightningModule):
             metrics = self.val_AP.compute()
             metrics = {k: v.to(self.device) for k, v in metrics.items()}
 
-            self.log("val/AP", metrics['map'], prog_bar=True)
-
-            self.log("val/AP", metrics['map'], prog_bar=True)
-            self.log("val/age_acc", self.val_age_acc.compute(), prog_bar=True)
-            self.log("val/race_acc", self.val_race_acc.compute(), prog_bar=True)
-            self.log("val/masked_acc", self.val_masked_acc.compute(), prog_bar=True)
-            self.log("val/skintone_acc", self.val_skintone_acc.compute(), prog_bar=True)
-            self.log("val/emotion_acc", self.val_emotion_acc.compute(), prog_bar=True)
-            self.log("val/gender_acc", self.val_gender_acc.compute(), prog_bar=True)
-
-    def to_cpu(self, x):
-        return [{ k: v.to('cpu') for k, v in t.items() } for t in x]
-
+            self.log("val/AP", metrics['map'], prog_bar=True, sync_dist=True)
+            self.log("val/age_acc", self.val_age_acc.compute(), prog_bar=True, sync_dist=True)
+            self.log("val/race_acc", self.val_race_acc.compute(), prog_bar=True, sync_dist=True)
+            self.log("val/masked_acc", self.val_masked_acc.compute(), prog_bar=True, sync_dist=True)
+            self.log("val/skintone_acc", self.val_skintone_acc.compute(), prog_bar=True, sync_dist=True)
+            self.log("val/emotion_acc", self.val_emotion_acc.compute(), prog_bar=True, sync_dist=True)
+            self.log("val/gender_acc", self.val_gender_acc.compute(), prog_bar=True, sync_dist=True)
 
     def on_validation_end(self) -> None:
         average_ifer_time = torch.tensor(self.infr_times, dtype=torch.float32).mean().item()
@@ -233,8 +227,6 @@ class YOLOModule(LightningModule):
         predictions = postprocess(predictions, self.confidence_threshold, self.nms_threshold)
         self.nms_times.append(time.time() - start_time)
 
-        # predictions = self.to_cpu(predictions)
-        # targets = self.to_cpu(targets)
         self.test_AP(predictions, targets)
 
         match_idx = match_pred_boxes(predictions, targets)
@@ -253,13 +245,13 @@ class YOLOModule(LightningModule):
             metrics = self.test_AP.compute()
             metrics = {k: v.to(self.device) for k, v in metrics.items()}
 
-            self.log("test/AP", metrics['map'], prog_bar=True)
-            self.log("test/age_acc", self.test_age_acc.compute(), prog_bar=True)
-            self.log("test/race_acc", self.test_race_acc.compute(), prog_bar=True)
-            self.log("test/masked_acc", self.test_masked_acc.compute(), prog_bar=True)
-            self.log("test/skintone_acc", self.test_skintone_acc.compute(), prog_bar=True)
-            self.log("test/emotion_acc", self.test_emotion_acc.compute(), prog_bar=True)
-            self.log("test/gender_acc", self.test_gender_acc.compute(), prog_bar=True)
+            self.log("test/AP", metrics['map'], prog_bar=True, sync_dist=True)
+            self.log("test/age_acc", self.test_age_acc.compute(), prog_bar=True, sync_dist=True)
+            self.log("test/race_acc", self.test_race_acc.compute(), prog_bar=True, sync_dist=True)
+            self.log("test/masked_acc", self.test_masked_acc.compute(), prog_bar=True, sync_dist=True)
+            self.log("test/skintone_acc", self.test_skintone_acc.compute(), prog_bar=True, sync_dist=True)
+            self.log("test/emotion_acc", self.test_emotion_acc.compute(), prog_bar=True, sync_dist=True)
+            self.log("test/gender_acc", self.test_gender_acc.compute(), prog_bar=True, sync_dist=True)
             
 
     def on_test_epoch_end(self):

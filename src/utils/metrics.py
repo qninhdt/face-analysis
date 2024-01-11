@@ -1,5 +1,5 @@
 import torch
-from torchmetrics.detection import MeanAveragePrecision
+from torchmetrics.detection.mean_ap import MeanAveragePrecision
 
 class AveragePrecision(MeanAveragePrecision):
 
@@ -9,7 +9,7 @@ class AveragePrecision(MeanAveragePrecision):
     def _insert_dummy_labels(self, targets):
         new_targets = []
         for target in targets:
-            dummy_labels = torch.zeros((target['boxes'].shape[0]), dtype=torch.int64)
+            dummy_labels = torch.zeros((target['boxes'].shape[0]), dtype=torch.int64, device=target['boxes'].device)
 
             target = { **target, 'labels': dummy_labels }
             new_targets.append(target)
@@ -19,7 +19,7 @@ class AveragePrecision(MeanAveragePrecision):
     def update(self, preds, targets) -> None:
 
         for target in targets:
-            target['boxes'] = torch.tensor(target['boxes'], dtype=torch.float32)
+            target['boxes'] = torch.tensor(target['boxes'], dtype=torch.float32, device=target['boxes'].device)
 
         new_targets = self._insert_dummy_labels(targets)
         preds = self._insert_dummy_labels(preds)
