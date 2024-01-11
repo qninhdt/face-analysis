@@ -149,6 +149,8 @@ class YOLOModule(LightningModule):
         predictions = postprocess(predictions, self.confidence_threshold, self.nms_threshold)
         self.nms_times.append(time.time() - start_time)
 
+        predictions = self.to_cpu(predictions)
+        targets = self.to_cpu(targets)
         self.val_AP(predictions, targets)
 
         match_idx = match_pred_boxes(predictions, targets)
@@ -176,6 +178,9 @@ class YOLOModule(LightningModule):
             self.log("val/skintone_acc", self.val_skintone_acc.compute(), prog_bar=True)
             self.log("val/emotion_acc", self.val_emotion_acc.compute(), prog_bar=True)
             self.log("val/gender_acc", self.val_gender_acc.compute(), prog_bar=True)
+
+    def to_cpu(self, x):
+        return [{ k: v.to('cpu') for k, v in t.items() } for t in x]
 
 
     def on_validation_end(self) -> None:
@@ -227,6 +232,8 @@ class YOLOModule(LightningModule):
         predictions = postprocess(predictions, self.confidence_threshold, self.nms_threshold)
         self.nms_times.append(time.time() - start_time)
 
+        predictions = self.to_cpu(predictions)
+        targets = self.to_cpu(targets)
         self.test_AP(predictions, targets)
 
         match_idx = match_pred_boxes(predictions, targets)
