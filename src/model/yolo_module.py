@@ -5,12 +5,14 @@ import torch
 from lightning import LightningModule
 # Train
 from utils.ema import ModelEMA
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import ExponentialLR
+from model.layers.lr_scheduler import CosineWarmupScheduler
 # Evaluate
 from utils.flops import model_summary
 from utils.metrics import AveragePrecision
 from torchmetrics.classification import Accuracy
+from torchmetrics import MeanMetric
 from model.evaluators.postprocess import postprocess, match_pred_boxes
 
 class YOLOModule(LightningModule):
@@ -36,7 +38,7 @@ class YOLOModule(LightningModule):
         self.nms_times = []
         self.ema_model = None
         
-        # self.automatic_optimization = False
+        self.automatic_optimization = False
 
         # metrics
         iou_types = [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
@@ -58,6 +60,16 @@ class YOLOModule(LightningModule):
         self.test_emotion_acc = Accuracy(task='multiclass', num_classes=7)
         self.test_gender_acc = Accuracy(task='multiclass', num_classes=2)
 
+        self.mean_loss = MeanMetric()
+        self.mean_box_loss = MeanMetric()
+        self.mean_obj_loss = MeanMetric()
+        self.mean_age_loss = MeanMetric()
+        self.mean_race_loss = MeanMetric()
+        self.mean_masked_loss = MeanMetric()
+        self.mean_skintone_loss = MeanMetric()
+        self.mean_emotion_loss = MeanMetric()
+        self.mean_gender_loss = MeanMetric()
+
         # Test
         # if test_cfgs is not None:
         #     self.visualize = test_cfgs['visualize']
@@ -67,8 +79,8 @@ class YOLOModule(LightningModule):
         #     self.show_score_thr = test_cfgs['show_score_thr']
 
     def on_train_start(self) -> None:
-        # if self.hparams.optimizer['ema'] is True:
-        #     self.ema_model = ModelEMA(self.model, 0.9998)
+        if self.hparams.optimizer['ema'] is True:
+            self.ema_model = ModelEMA(self.model, 0.9998)
 
         # model_summary(self, self.img_size, self.device)
         pass
@@ -78,19 +90,48 @@ class YOLOModule(LightningModule):
 
         losses = self.model(images, targets)
 
-        # self.log_dict(losses)
-        self.log("train/loss", losses['loss'], prog_bar=True)
-        self.log("train/box_loss", losses['box_loss'], prog_bar=True)
-        self.log("train/obj_loss", losses['obj_loss'], prog_bar=True)
-        self.log("train/age_loss", losses['age_loss'], prog_bar=True)
-        self.log("train/race_loss", losses['race_loss'], prog_bar=True)
-        self.log("train/masked_loss", losses['masked_loss'], prog_bar=True)
-        self.log("train/skintone_loss", losses['skintone_loss'], prog_bar=True)
-        self.log("train/emotion_loss", losses['emotion_loss'], prog_bar=True)
-        self.log("train/gender_loss", losses['gender_loss'], prog_bar=True)
-        self.log("lr", self.trainer.optimizers[0].param_groups[0]['lr'], prog_bar=True)
+        self.log('train/rt_loss', losses['loss'], prog_bar=True)
 
-        return losses['loss']
+        self.mean_loss(losses['loss'])
+        self.mean_box_loss(losses['box_loss'])
+        self.mean_obj_loss(losses['obj_loss'])
+        self.mean_age_loss(losses['age_loss'])
+        self.mean_race_loss(losses['race_loss'])
+        self.mean_masked_loss(losses['masked_loss'])
+        self.mean_skintone_loss(losses['skintone_loss'])
+        self.mean_emotion_loss(losses['emotion_loss'])
+        self.mean_gender_loss(losses['gender_loss'])
+
+        # Backward
+        optimizer = self.optimizers()
+        optimizer.zero_grad()
+        self.manual_backward(losses['loss'])
+        optimizer.step()
+
+        if self.hparams.optimizer['ema'] is True:
+            self.ema_model.update(self.model)
+        self.lr_schedulers().step()
+
+        if batch_idx == self.trainer.num_training_batches - 1:
+            self.log("train/loss", self.mean_loss, prog_bar=True)
+            self.log("train/box_loss", self.mean_box_loss, prog_bar=True)
+            self.log("train/obj_loss", self.mean_obj_loss, prog_bar=True)
+            self.log("train/age_loss", self.mean_age_loss, prog_bar=True)
+            self.log("train/race_loss", self.mean_race_loss, prog_bar=True)
+            self.log("train/masked_loss", self.mean_masked_loss, prog_bar=True)
+            self.log("train/skintone_loss", self.mean_skintone_loss, prog_bar=True)
+            self.log("train/emotion_loss", self.mean_emotion_loss, prog_bar=True)
+            self.log("train/gender_loss", self.mean_gender_loss, prog_bar=True)
+            self.log("lr", self.trainer.optimizers[0].param_groups[0]['lr'], prog_bar=True)
+            self.mean_loss.reset()
+            self.mean_box_loss.reset()
+            self.mean_obj_loss.reset()
+            self.mean_age_loss.reset()
+            self.mean_race_loss.reset()
+            self.mean_masked_loss.reset()
+            self.mean_skintone_loss.reset()
+            self.mean_emotion_loss.reset()
+            self.mean_gender_loss.reset()
 
     def on_validation_start(self) -> None:
         self.val_AP.reset()
@@ -144,14 +185,21 @@ class YOLOModule(LightningModule):
         self.infr_times, self.nms_times = [], []
 
     def configure_optimizers(self):
-        optimizer = Adam(self.parameters(),
-                        lr=self.hparams.optimizer['learning_rate'],
-                        weight_decay=self.hparams.optimizer['weight_decay'])
+        # optimizer = Adam(self.parameters(),
+        #                 lr=self.hparams.optimizer['learning_rate'],
+        #                 weight_decay=self.hparams.optimizer['weight_decay'])
         
-        # total_steps = self.trainer.estimated_stepping_batches
+        # # total_steps = self.trainer.estimated_stepping_batches
         
-        lr_scheduler = ExponentialLR(optimizer, gamma=self.hparams.optimizer['gamma'])
+        # lr_scheduler = ExponentialLR(optimizer, gamma=self.hparams.optimizer['gamma'])
         
+        # return [optimizer], [lr_scheduler]
+
+        optimizer = SGD(self.parameters(), lr=self.hparams.optimizer["learning_rate"],
+                        momentum=self.hparams.optimizer["momentum"],
+                        weight_decay=self.hparams.optimizer["weight_decay"])
+        total_steps = self.trainer.estimated_stepping_batches
+        lr_scheduler = CosineWarmupScheduler(optimizer, warmup=self.hparams.optimizer['warmup'] * total_steps, max_iters=total_steps)
         return [optimizer], [lr_scheduler]
 
     def on_train_end(self) -> None:
