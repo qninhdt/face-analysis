@@ -183,37 +183,37 @@ class YOLOv7Loss(nn.Module):
                 t = torch.full_like(prediction_pos[:, 5:11], self.cn).type_as(prediction)  # targets
                 t[range(n), selected_age] = self.cp
                 # age_weight = torch.tensor([0.011, 0.0771, 0.1295, 0.1939, 0.2305, 0.358]).type_as(prediction)
-                age_loss += F.binary_cross_entropy_with_logits(prediction_pos[:, 5:11], t)  # BCE
+                age_loss += F.cross_entropy(prediction_pos[:, 5:11], t)  # BCE
 
                 # race loss
                 t = torch.full_like(prediction_pos[:, 11:14], self.cn).type_as(prediction)  # targets
                 t[range(n), selected_race] = self.cp
                 # race_weight = torch.tensor([0.08, 0.0843, 0.8357]).type_as(prediction)
-                race_loss += F.binary_cross_entropy_with_logits(prediction_pos[:, 11:14], t)  # BCE
+                race_loss += F.cross_entropy(prediction_pos[:, 11:14], t)  # BCE
                 
                 # masked loss
                 t = torch.full_like(prediction_pos[:, 14:16], self.cn).type_as(prediction)  # targets
                 t[range(n), selected_masked] = self.cp
                 # masked_weight = torch.tensor([0.0329, 0.9671]).type_as(prediction)
-                masked_loss += F.binary_cross_entropy_with_logits(prediction_pos[:, 14:16], t)  # BCE
+                masked_loss += F.cross_entropy(prediction_pos[:, 14:16], t)  # BCE
                 
                 # skintone loss
                 t = torch.full_like(prediction_pos[:, 16:20], self.cn).type_as(prediction)  # targets
                 t[range(n), selected_skintone] = self.cp
                 # skintone_weight = torch.tensor([0.0209, 0.0593, 0.2742, 0.6456]).type_as(prediction)
-                skintone_loss += F.binary_cross_entropy_with_logits(prediction_pos[:, 16:20], t)  # BCE
+                skintone_loss += F.cross_entropy(prediction_pos[:, 16:20], t)  # BCE
 
                 # emotion loss
                 t = torch.full_like(prediction_pos[:, 20:27], self.cn).type_as(prediction)
                 t[range(n), selected_emotion] = self.cp
                 # emotion_weight = torch.tensor([0.0042, 0.008, 0.1023, 0.1218, 0.1283, 0.2944, 0.3409]).type_as(prediction)
-                emotion_loss += F.binary_cross_entropy_with_logits(prediction_pos[:, 20:27], t)  # BCE
+                emotion_loss += F.cross_entropy(prediction_pos[:, 20:27], t)  # BCE
 
                 # gender loss
                 t = torch.full_like(prediction_pos[:, 27:29], self.cn).type_as(prediction)
                 t[range(n), selected_gender] = self.cp
                 # gender_weight = torch.tensor([0.6127, 0.3127]).type_as(prediction)
-                gender_loss += F.binary_cross_entropy_with_logits(prediction_pos[:, 27:29], t)  # BCE
+                gender_loss += F.cross_entropy(prediction_pos[:, 27:29], t)  # BCE
 
             # -------------------------------------------#
             # calculate the confidence loss of whether the target exists
