@@ -133,9 +133,6 @@ class YOLOModule(LightningModule):
             self.mean_emotion_loss.reset()
             self.mean_gender_loss.reset()
 
-    def on_validation_start(self) -> None:
-        self.val_AP.reset()
-
     def validation_step(self, batch, batch_idx):
         images, targets = batch
 
@@ -149,8 +146,8 @@ class YOLOModule(LightningModule):
         predictions = postprocess(predictions, self.confidence_threshold, self.nms_threshold)
         self.nms_times.append(time.time() - start_time)
 
-        predictions = self.to_cpu(predictions)
-        targets = self.to_cpu(targets)
+        # predictions = self.to_cpu(predictions)
+        # targets = self.to_cpu(targets)
         self.val_AP(predictions, targets)
 
         match_idx = match_pred_boxes(predictions, targets)
@@ -188,6 +185,13 @@ class YOLOModule(LightningModule):
         average_nms_time = torch.tensor(self.nms_times, dtype=torch.float32).mean().item()
         print("The average iference time is %.4fs, nms time is %.4fs" % (average_ifer_time, average_nms_time))
         self.infr_times, self.nms_times = [], []
+        self.val_age_acc.reset()
+        self.val_race_acc.reset()
+        self.val_masked_acc.reset()
+        self.val_skintone_acc.reset()
+        self.val_emotion_acc.reset()
+        self.val_gender_acc.reset()
+        self.val_AP.reset()
 
     def configure_optimizers(self):
         # optimizer = Adam(self.parameters(),
@@ -215,9 +219,6 @@ class YOLOModule(LightningModule):
         self.model.eval()
         detections = self.model(imgs)
         return detections, labels
-    
-    def on_test_start(self) -> None:
-        self.test_AP.reset()
 
     def test_step(self, batch, batch_idx):
         images, targets = batch
@@ -232,8 +233,8 @@ class YOLOModule(LightningModule):
         predictions = postprocess(predictions, self.confidence_threshold, self.nms_threshold)
         self.nms_times.append(time.time() - start_time)
 
-        predictions = self.to_cpu(predictions)
-        targets = self.to_cpu(targets)
+        # predictions = self.to_cpu(predictions)
+        # targets = self.to_cpu(targets)
         self.test_AP(predictions, targets)
 
         match_idx = match_pred_boxes(predictions, targets)
@@ -262,6 +263,13 @@ class YOLOModule(LightningModule):
             
 
     def on_test_epoch_end(self):
+        self.test_age_acc.reset()
+        self.test_race_acc.reset()
+        self.test_masked_acc.reset()
+        self.test_skintone_acc.reset()
+        self.test_emotion_acc.reset()
+        self.test_gender_acc.reset()
+        self.test_AP.reset()
         average_ifer_time = torch.tensor(self.infr_times, dtype=torch.float32).mean().item()
         average_nms_time = torch.tensor(self.nms_times, dtype=torch.float32).mean().item()
         print("The average iference time is %.4fs, nms time is %.4fs" % (average_ifer_time, average_nms_time))

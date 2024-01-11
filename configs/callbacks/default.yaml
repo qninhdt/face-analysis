@@ -13,7 +13,7 @@ model_checkpoint:
   save_last: True
   every_n_epochs: 1
   save_top_k: 3
-  enable_version_counter: False
+  # enable_version_counter: False
 
 # early_stopping:
 #   monitor: "val/map"
