@@ -91,6 +91,7 @@ class YOLOModule(LightningModule):
         losses = self.model(images, targets)
 
         self.log('train/rt_loss', losses['loss'], prog_bar=True)
+        self.log("lr", self.trainer.optimizers[0].param_groups[0]['lr'], prog_bar=True)
 
         self.mean_loss(losses['loss'])
         self.mean_box_loss(losses['box_loss'])
@@ -122,7 +123,6 @@ class YOLOModule(LightningModule):
             self.log("train/skintone_loss", self.mean_skintone_loss, prog_bar=True)
             self.log("train/emotion_loss", self.mean_emotion_loss, prog_bar=True)
             self.log("train/gender_loss", self.mean_gender_loss, prog_bar=True)
-            self.log("lr", self.trainer.optimizers[0].param_groups[0]['lr'], prog_bar=True)
             self.mean_loss.reset()
             self.mean_box_loss.reset()
             self.mean_obj_loss.reset()
