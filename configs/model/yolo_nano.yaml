@@ -31,8 +31,8 @@ model:
       - [[106, 137], [135, 173], [170, 219]] # P4/16
       - [[228, 290], [350, 467], [369, 510]] # P5/32
 
-    box_ratio: 0.2
-    obj_ratio: 4
+    box_ratio: 1
+    obj_ratio: 10
     age_ratio: 0.5
     race_ratio: 0.5
     gender_ratio: 0.5
