@@ -220,6 +220,7 @@ class YOLOModule(LightningModule):
             metrics = {k: v.to(self.device) for k, v in metrics.items()}
 
             self.log("val/AP", metrics["map"], prog_bar=True, sync_dist=True)
+            self.log("val/AP_50", metrics["map_50"], prog_bar=True, sync_dist=True)
             self.log(
                 "val/age_acc", self.val_age_acc.compute(), prog_bar=True, sync_dist=True
             )
@@ -353,6 +354,7 @@ class YOLOModule(LightningModule):
             metrics = {k: v.to(self.device) for k, v in metrics.items()}
 
             self.log("test/AP", metrics["map"], prog_bar=True, sync_dist=True)
+            self.log("test/AP_50", metrics["map_50"], prog_bar=True, sync_dist=True)
             self.log(
                 "test/age_acc",
                 self.test_age_acc.compute(),
