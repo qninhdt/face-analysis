@@ -7,7 +7,7 @@ from lightning import LightningModule
 # Train
 from utils.ema import ModelEMA
 from torch.optim import Adam, SGD
-from torch.optim.lr_scheduler import ExponentialLR
+from torch.optim.lr_scheduler import ExponentialLR, ConstantLR
 from model.layers.lr_scheduler import CosineWarmupScheduler
 
 # Evaluate
@@ -286,11 +286,12 @@ class YOLOModule(LightningModule):
             weight_decay=self.hparams.optimizer["weight_decay"],
         )
         total_steps = self.trainer.estimated_stepping_batches
-        lr_scheduler = CosineWarmupScheduler(
-            optimizer,
-            warmup=self.hparams.optimizer["warmup"] * total_steps,
-            max_iters=total_steps,
-        )
+        # lr_scheduler = CosineWarmupScheduler(
+        #     optimizer,
+        #     warmup=self.hparams.optimizer["warmup"] * total_steps,
+        #     max_iters=total_steps,
+        # )
+        lr_scheduler = ConstantLR(optimizer, factor=1.0)
         return [optimizer], [lr_scheduler]
 
     def on_train_end(self) -> None:
