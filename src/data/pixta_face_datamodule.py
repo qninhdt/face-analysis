@@ -30,29 +30,30 @@ class PIXTAFaceDataModule(LightningDataModule):
         self.save_hyperparameters(logger=False)
 
         # data transformations
-        normalize = Normalize(mean=[0.6596, 0.6235, 0.5875], std=[0.2272, 0.2248, 0.2345])
-        
-        self.train_transforms = T.Compose([
-            RandomCropWithoutLossingBoxes(),
-            SquarePad(),
-            # T.RandomRotation(degrees=[-15, 15]),
-            T.RandomHorizontalFlip(p=0.5),
-            # T.RandomGrayscale(p=0.1),
-            T.Resize(IMAGE_SIZE, antialias=True),
-            # T.ColorJitter(brightness=[0.5, 1.25]),
-            # T.RandomApply([
-            #     T.GaussianBlur(kernel_size=(7, 7), sigma=(0.1, 2))
-            # ], p=0.5),
-            T.ToDtype(torch.float32, scale=True),
-            normalize,
-        ])
+        normalize = Normalize(
+            mean=[0.6596, 0.6235, 0.5875], std=[0.2272, 0.2248, 0.2345]
+        )
 
-        self.transforms = T.Compose([
-            SquarePad(),
-            T.Resize(IMAGE_SIZE, antialias=True),
-            T.ToDtype(torch.float32, scale=True),
-            normalize,
-        ])
+        self.train_transforms = T.Compose(
+            [
+                RandomCropWithoutLossingBoxes(),
+                SquarePad(),
+                T.RandomHorizontalFlip(p=0.5),
+                T.Resize(IMAGE_SIZE, antialias=True),
+                T.ColorJitter(brightness=[0.5, 1.25]),
+                T.ToDtype(torch.float32, scale=True),
+                normalize,
+            ]
+        )
+
+        self.transforms = T.Compose(
+            [
+                SquarePad(),
+                T.Resize(IMAGE_SIZE, antialias=True),
+                T.ToDtype(torch.float32, scale=True),
+                normalize,
+            ]
+        )
 
         self.dataset: Optional[PIXTAFaceDataset] = None
         self.data_train: Optional[Dataset] = None
@@ -75,9 +76,7 @@ class PIXTAFaceDataModule(LightningDataModule):
                 raise RuntimeError(
                     f"Batch size ({self.batch_size}) is not divisible by the number of devices ({self.trainer.world_size})."
                 )
-            self.batch_size_per_device = (
-                self.batch_size // self.trainer.world_size
-            )
+            self.batch_size_per_device = self.batch_size // self.trainer.world_size
 
         if not self.data_train and not self.data_val and not self.data_test:
             self.data_train = PIXTAFaceDataset(self.data_dir, "train")
@@ -110,7 +109,7 @@ class PIXTAFaceDataModule(LightningDataModule):
     def _collate_fn(
         self, batch: List[Dict[str, Any]]
     ) -> Tuple[torch.Tensor, List[dict]]:
-        images = torch.stack([x['image'] for x in batch])
-        targets = [{k: v for k, v in x.items() if k != 'image'} for x in batch]
+        images = torch.stack([x["image"] for x in batch])
+        targets = [{k: v for k, v in x.items() if k != "image"} for x in batch]
 
         return images, targets

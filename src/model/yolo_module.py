@@ -40,10 +40,10 @@ class YOLOModule(LightningModule):
         self.nms_times = []
         self.ema_model = None
 
-        self.automatic_optimization = False
+        # self.automatic_optimization = False
 
-        checkpoint = torch.load("./checkpoints/yolo_nano/last.ckpt")
-        self.load_state_dict(checkpoint["state_dict"])
+        # checkpoint = torch.load("./checkpoints/yolo_nano/last.ckpt")
+        # self.load_state_dict(checkpoint["state_dict"])
 
         # metrics
         iou_types = [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
@@ -284,10 +284,9 @@ class YOLOModule(LightningModule):
 
         # return [optimizer], [lr_scheduler]
 
-        optimizer = SGD(
+        optimizer = Adam(
             self.parameters(),
             lr=self.hparams.optimizer["learning_rate"],
-            momentum=self.hparams.optimizer["momentum"],
             weight_decay=self.hparams.optimizer["weight_decay"],
         )
         total_steps = self.trainer.estimated_stepping_batches
