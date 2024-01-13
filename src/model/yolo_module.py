@@ -42,6 +42,9 @@ class YOLOModule(LightningModule):
 
         self.automatic_optimization = False
 
+        checkpoint = torch.load("./checkpoints/yolo_nano/last.ckpt")
+        self.load_state_dict(checkpoint["state_dict"])
+
         # metrics
         iou_types = [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
 
@@ -106,14 +109,14 @@ class YOLOModule(LightningModule):
         self.mean_gender_loss(losses["gender_loss"])
 
         # Backward
-        optimizer = self.optimizers()
-        optimizer.zero_grad()
-        self.manual_backward(losses["loss"])
-        optimizer.step()
+        # optimizer = self.optimizers()
+        # optimizer.zero_grad()
+        # self.manual_backward(losses["loss"])
+        # optimizer.step()
 
-        if self.hparams.optimizer["ema"] is True:
-            self.ema_model.update(self.model)
-        self.lr_schedulers().step()
+        # if self.hparams.optimizer["ema"] is True:
+        #     self.ema_model.update(self.model)
+        # self.lr_schedulers().step()
 
         if batch_idx == self.trainer.num_training_batches - 1:
             self.log(
@@ -167,6 +170,8 @@ class YOLOModule(LightningModule):
                 prog_bar=True,
                 sync_dist=True,
             )
+
+        return losses["loss"]
 
     def validation_step(self, batch, batch_idx):
         images, targets = batch

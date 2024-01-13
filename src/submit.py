@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader, Dataset
 from model.evaluators.postprocess import postprocess
 
 sys.path.append(str(Path(__file__).parent))
-os.environ['PROJECT_ROOT'] = str(Path(__file__).parent.parent)
+os.environ["PROJECT_ROOT"] = str(Path(__file__).parent.parent)
 
 from utils import (
     RankedLogger,
@@ -55,29 +55,10 @@ def submit(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     log.info("Starting inferencing!")
 
     labels_map = {
-        "age": [
-            "Baby",
-            "Kid",
-            "Teenager",
-            "20-30s",
-            "40-50s",
-            "Senior"
-        ],
-        "race": [
-            "Caucasian",
-            "Mongoloid",
-            "Negroid"
-        ],
-        "masked": [
-            "unmasked",
-            "masked"
-        ],
-        "skintone": [
-            "light",
-            "mid-light",
-            "mid-dark",
-            "dark"
-        ],
+        "age": ["Baby", "Kid", "Teenager", "20-30s", "40-50s", "Senior"],
+        "race": ["Caucasian", "Mongoloid", "Negroid"],
+        "masked": ["unmasked", "masked"],
+        "skintone": ["light", "mid-light", "mid-dark", "dark"],
         "emotion": [
             "Neutral",
             "Happiness",
@@ -85,12 +66,9 @@ def submit(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
             "Sadness",
             "Fear",
             "Disgust",
-            "Anger"
+            "Anger",
         ],
-        "gender": [
-            "Male",
-            "Female"
-        ]
+        "gender": ["Male", "Female"],
     }
 
     def collate_fn(batch):
@@ -104,16 +82,18 @@ def submit(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         batch_size=2,
         num_workers=8,
         shuffle=False,
-        collate_fn=collate_fn
+        collate_fn=collate_fn,
     )
 
     # for predictions use trainer.predict(...)
-    outputs = trainer.predict(model=model, dataloaders=data_loader, ckpt_path=cfg.ckpt_path)
+    outputs = trainer.predict(
+        model=model, dataloaders=data_loader, ckpt_path=cfg.ckpt_path
+    )
 
     preds = []
     for predictions, labels in outputs:
-        image_sizes = [[label['width'], label['height']] for label in labels]
-        pred = postprocess(predictions, origin_sizes=image_sizes)
+        image_sizes = [[label["width"], label["height"]] for label in labels]
+        pred = postprocess(predictions, origin_sizes=image_sizes, conf_thre=0.1)
         preds.extend(pred)
 
     print(f"Finish inferencing {len(preds)} images")
@@ -122,28 +102,28 @@ def submit(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     image_list = dataset.image_list
 
     for i, pred in enumerate(preds):
-        for j in range(pred['boxes'].shape[0]):
-
+        for j in range(pred["boxes"].shape[0]):
             # convert cxcywh to xywh
-            pred['boxes'][j][0] -= pred['boxes'][j][2] / 2
-            pred['boxes'][j][1] -= pred['boxes'][j][3] / 2
+            pred["boxes"][j][0] -= pred["boxes"][j][2] / 2
+            pred["boxes"][j][1] -= pred["boxes"][j][3] / 2
 
             result = {
                 "image_id": image_list[i][1],
                 "file_name": image_list[i][0],
-                "bbox": str(pred['boxes'][j].tolist()),
-                "age": labels_map['age'][pred['age'][j].long().item()],
-                "race": labels_map['race'][pred['race'][j].long().item()],
-                "skintone": labels_map['skintone'][pred['skintone'][j].long().item()],
-                "emotion": labels_map['emotion'][pred['emotion'][j].long().item()],
-                "gender": labels_map['gender'][pred['gender'][j].long().item()],
-                "masked": labels_map['masked'][pred['masked'][j].long().item()],
+                "bbox": str(pred["boxes"][j].tolist()),
+                "age": labels_map["age"][pred["age"][j].long().item()],
+                "race": labels_map["race"][pred["race"][j].long().item()],
+                "skintone": labels_map["skintone"][pred["skintone"][j].long().item()],
+                "emotion": labels_map["emotion"][pred["emotion"][j].long().item()],
+                "gender": labels_map["gender"][pred["gender"][j].long().item()],
+                "masked": labels_map["masked"][pred["masked"][j].long().item()],
             }
 
             results.append(result)
 
     # convert to csv
     import pandas as pd
+
     df = pd.DataFrame(results)
     df.to_csv("answer.csv", index=False)
 
