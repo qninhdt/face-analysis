@@ -10,7 +10,7 @@ from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig
 
 sys.path.append(str(Path(__file__).parent))
-os.environ['PROJECT_ROOT'] = str(Path(__file__).parent.parent)
+os.environ["PROJECT_ROOT"] = str(Path(__file__).parent.parent)
 
 from utils import (
     RankedLogger,

@@ -28,10 +28,10 @@ test-full: ## Run all tests
 
 train-yolo: ## Train YOLO model
 	python src/train.py \
-		model=yolo \
+		model=yolo_nano \
 		trainer=gpu \
 		data.batch_size=2 \
-		trainer.fast_dev_run=True
+		ckpt_path="./checkpoints/yolo_nano/last.ckpt"
 
 eval-yolo:
 	python src/eval.py \
@@ -42,7 +42,7 @@ eval-yolo:
 
 submit-yolo:
 	python src/submit.py \
-		model=yolo \
+		model=yolo_nano \
 		trainer=gpu \
 		data=public_pixta_face \
-		ckpt_path="./checkpoints/yolo/epoch\=097.ckpt"
+		ckpt_path="./checkpoints/yolo_nano/last.ckpt"
