@@ -7,7 +7,7 @@ from lightning import LightningModule
 # Train
 from utils.ema import ModelEMA
 from torch.optim import Adam, SGD
-from torch.optim.lr_scheduler import ExponentialLR, ConstantLR
+from torch.optim.lr_scheduler import ExponentialLR, ConstantLR, ReduceLROnPlateau
 from model.layers.lr_scheduler import CosineWarmupScheduler
 
 # Evaluate
@@ -84,10 +84,10 @@ class YOLOModule(LightningModule):
         #     self.show_score_thr = test_cfgs['show_score_thr']
 
     def on_train_start(self) -> None:
-        if self.hparams.optimizer["ema"] is True:
-            self.ema_model = ModelEMA(self.model, 0.9998)
+        # if self.hparams.optimizer["ema"] is True:
+        #     self.ema_model = ModelEMA(self.model, 0.9998)
 
-        # model_summary(self, self.img_size, self.device)
+        # # model_summary(self, self.img_size, self.device)
         pass
 
     def training_step(self, batch, batch_idx):
@@ -274,29 +274,25 @@ class YOLOModule(LightningModule):
         self.infr_times, self.nms_times = [], []
 
     def configure_optimizers(self):
-        # optimizer = Adam(self.parameters(),
-        #                 lr=self.hparams.optimizer['learning_rate'],
-        #                 weight_decay=self.hparams.optimizer['weight_decay'])
-
-        # # total_steps = self.trainer.estimated_stepping_batches
-
-        # lr_scheduler = ExponentialLR(optimizer, gamma=self.hparams.optimizer['gamma'])
-
-        # return [optimizer], [lr_scheduler]
-
         optimizer = Adam(
             self.parameters(),
             lr=self.hparams.optimizer["learning_rate"],
             weight_decay=self.hparams.optimizer["weight_decay"],
         )
-        total_steps = self.trainer.estimated_stepping_batches
-        # lr_scheduler = CosineWarmupScheduler(
-        #     optimizer,
-        #     warmup=self.hparams.optimizer["warmup"] * total_steps,
-        #     max_iters=total_steps,
-        # )
-        lr_scheduler = ConstantLR(optimizer, factor=1.0)
-        return [optimizer], [lr_scheduler]
+
+        scheduler = ReduceLROnPlateau(
+            optimizer, mode="max", factor=0.5, patience=10, min_lr=0.00001, cooldown=5
+        )
+
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "monitor": "val/AP",
+                "interval": "epoch",
+                "frequency": 1,
+            },
+        }
 
     def on_train_end(self) -> None:
         pass

@@ -30,7 +30,8 @@ train-yolo: ## Train YOLO model
 	python src/train.py \
 		model=yolo_nano \
 		trainer=gpu \
-		data.batch_size=2 
+		data.batch_size=2 \
+		trainer.fast_dev_run=True
 eval-yolo:
 	python src/eval.py \
 		model=yolo_nano \

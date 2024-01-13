@@ -19,8 +19,8 @@ model:
     act: lrelu
 
   head:
-    _target_: model.heads.implicit_head.ImplicitHead
-    num_anchors: 3
+    _target_: model.heads.decoupled_head.DecoupledHead
+    n_anchors: 3
     in_channels: [128, 256, 512]
 
   loss:
