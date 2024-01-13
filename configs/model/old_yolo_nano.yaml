@@ -1,0 +1,55 @@
+_target_: model.yolo_module.YOLOModule
+
+model:
+  _target_: model.yolo.YOLO
+
+  backbone:
+    _target_: model.backbones.eelan.EELAN
+    depths: [2, 2, 2, 2]
+    channels: [32, 64, 128, 256, 512]
+    out_features: ["stage2", "stage3", "stage4"]
+    norm: bn
+    act: lrelu
+
+  neck:
+    _target_: model.necks.yolov7_neck.YOLOv7NECK
+    depths: [2, 2, 2, 2]
+    in_channels: [256, 512, 512]
+    norm: bn
+    act: lrelu
+
+  head:
+    _target_: model.heads.implicit_head.ImplicitHead
+    num_anchors: 3
+    in_channels: [128, 256, 512]
+
+  loss:
+    _target_: model.losses.yolov7.yolov7_loss.YOLOv7Loss
+    strides: [8, 16, 32]
+    anchors:
+      - [[34, 45], [60, 78], [82, 107]] # P3/8
+      - [[106, 137], [135, 173], [170, 219]] # P4/16
+      - [[228, 290], [350, 467], [369, 510]] # P5/32
+
+    box_ratio: 1
+    obj_ratio: 10
+    age_ratio: 0.5
+    race_ratio: 0.5
+    gender_ratio: 0.5
+    masked_ratio: 0.5
+    skintone_ratio: 0.5
+    emotion_ratio: 0.5
+
+image_size: 640
+
+nms_threshold: 0.35
+confidence_threshold: 0.01
+
+optimizer:
+  learning_rate: 0.03
+  momentum: 0.9
+  weight_decay: 0.0005
+  warmup: 0.1
+  ema: True
+
+compile: false
