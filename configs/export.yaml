@@ -1,0 +1,17 @@
+# @package _global_
+
+defaults:
+  - _self_
+  - model: yolo_nano
+  - paths: default
+  - extras: default
+  - hydra: default
+
+task_name: "eval"
+
+tags: ["dev"]
+
+# passing checkpoint path is necessary for evaluation
+ckpt_path: ./checkpoints/yolo_nano_v1/last.ckpt
+
+onnx_path: null

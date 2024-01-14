@@ -40,7 +40,7 @@ class YOLOModule(LightningModule):
         self.nms_times = []
         self.ema_model = None
 
-        # self.automatic_optimization = False
+        self.automatic_optimization = False
 
         # checkpoint = torch.load("./checkpoints/yolo_nano/last.ckpt")
         # self.load_state_dict(checkpoint["state_dict"])
@@ -84,10 +84,10 @@ class YOLOModule(LightningModule):
         #     self.show_score_thr = test_cfgs['show_score_thr']
 
     def on_train_start(self) -> None:
-        # if self.hparams.optimizer["ema"] is True:
-        #     self.ema_model = ModelEMA(self.model, 0.9998)
+        if self.hparams.optimizer["ema"] is True:
+            self.ema_model = ModelEMA(self.model, 0.9998)
 
-        # # model_summary(self, self.img_size, self.device)
+        # model_summary(self, self.img_size, self.device)
         pass
 
     def training_step(self, batch, batch_idx):
@@ -109,14 +109,14 @@ class YOLOModule(LightningModule):
         self.mean_gender_loss(losses["gender_loss"])
 
         # Backward
-        # optimizer = self.optimizers()
-        # optimizer.zero_grad()
-        # self.manual_backward(losses["loss"])
-        # optimizer.step()
+        optimizer = self.optimizers()
+        optimizer.zero_grad()
+        self.manual_backward(losses["loss"])
+        optimizer.step()
 
-        # if self.hparams.optimizer["ema"] is True:
-        #     self.ema_model.update(self.model)
-        # self.lr_schedulers().step()
+        if self.hparams.optimizer["ema"] is True:
+            self.ema_model.update(self.model)
+        self.lr_schedulers().step()
 
         if batch_idx == self.trainer.num_training_batches - 1:
             self.log(
@@ -171,7 +171,7 @@ class YOLOModule(LightningModule):
                 sync_dist=True,
             )
 
-        return losses["loss"]
+        # return losses["loss"]
 
     def validation_step(self, batch, batch_idx):
         images, targets = batch
@@ -274,25 +274,38 @@ class YOLOModule(LightningModule):
         self.infr_times, self.nms_times = [], []
 
     def configure_optimizers(self):
-        optimizer = Adam(
+        # optimizer = Adam(
+        #     self.parameters(),
+        #     lr=self.hparams.optimizer["learning_rate"],
+        #     weight_decay=self.hparams.optimizer["weight_decay"],
+        # )
+
+        # scheduler = ReduceLROnPlateau(
+        #     optimizer, mode="max", factor=0.5, patience=15, min_lr=0.00001, cooldown=5
+        # )
+
+        # return {
+        #     "optimizer": optimizer,
+        #     "lr_scheduler": {
+        #         "scheduler": scheduler,
+        #         "monitor": "val/AP",
+        #         "interval": "epoch",
+        #         "frequency": 1,
+        #     },
+        # }
+        optimizer = SGD(
             self.parameters(),
             lr=self.hparams.optimizer["learning_rate"],
+            momentum=self.hparams.optimizer["momentum"],
             weight_decay=self.hparams.optimizer["weight_decay"],
         )
-
-        scheduler = ReduceLROnPlateau(
-            optimizer, mode="max", factor=0.5, patience=15, min_lr=0.00001, cooldown=5
+        total_steps = self.trainer.estimated_stepping_batches
+        lr_scheduler = CosineWarmupScheduler(
+            optimizer,
+            warmup=self.hparams.optimizer["warmup"] * total_steps,
+            max_iters=total_steps,
         )
-
-        return {
-            "optimizer": optimizer,
-            "lr_scheduler": {
-                "scheduler": scheduler,
-                "monitor": "val/AP",
-                "interval": "epoch",
-                "frequency": 1,
-            },
-        }
+        return [optimizer], [lr_scheduler]
 
     def on_train_end(self) -> None:
         pass

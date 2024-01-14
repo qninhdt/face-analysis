@@ -45,3 +45,8 @@ submit-yolo:
 		trainer=gpu \
 		data=public_pixta_face \
 		ckpt_path="./checkpoints/yolo_nano/last.ckpt"
+
+export-yolo:
+	python src/export.py \
+		model=yolo_nano_v1 \
+		onnx_path="./checkpoints/yolo_nano_v1/yolo_nano_v1.onnx"
