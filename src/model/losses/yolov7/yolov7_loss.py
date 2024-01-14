@@ -213,9 +213,9 @@ class YOLOv7Loss(nn.Module):
                     prediction
                 )  # targets
                 t[range(n), selected_age] = 1
-                age_weight = torch.tensor([1, 2, 2, 4, 4, 4]).type_as(prediction)
+                # age_weight = torch.tensor([1, 2, 2, 4, 4, 4]).type_as(prediction)
                 age_loss += F.cross_entropy(
-                    prediction_pos[:, 5:11], t, weight=age_weight
+                    prediction_pos[:, 5:11], t  # , weight=age_weight
                 )  # BCE
 
                 # race loss
@@ -223,9 +223,9 @@ class YOLOv7Loss(nn.Module):
                     prediction
                 )  # targets
                 t[range(n), selected_race] = 1
-                race_weight = torch.tensor([1, 1, 4]).type_as(prediction)
+                # race_weight = torch.tensor([1, 1, 4]).type_as(prediction)
                 race_loss += F.cross_entropy(
-                    prediction_pos[:, 11:14], t, weight=race_weight
+                    prediction_pos[:, 11:14], t  # , weight=race_weight
                 )  # BCE
 
                 # masked loss
@@ -233,9 +233,9 @@ class YOLOv7Loss(nn.Module):
                     prediction
                 )  # targets
                 t[range(n), selected_masked] = 1
-                masked_weight = torch.tensor([1, 16]).type_as(prediction)
+                # masked_weight = torch.tensor([1, 16]).type_as(prediction)
                 masked_loss += F.cross_entropy(
-                    prediction_pos[:, 14:16], t, weight=masked_weight
+                    prediction_pos[:, 14:16], t  # , weight=masked_weight
                 )  # BCE
 
                 # skintone loss
@@ -243,17 +243,17 @@ class YOLOv7Loss(nn.Module):
                     prediction
                 )  # targets
                 t[range(n), selected_skintone] = 1
-                skintone_weight = torch.tensor([1, 2, 4, 8]).type_as(prediction)
+                # skintone_weight = torch.tensor([1, 2, 4, 8]).type_as(prediction)
                 skintone_loss += F.cross_entropy(
-                    prediction_pos[:, 16:20], t, weight=skintone_weight
+                    prediction_pos[:, 16:20], t  # , weight=skintone_weight
                 )  # BCE
 
                 # emotion loss
                 t = torch.full_like(prediction_pos[:, 20:27], 0).type_as(prediction)
                 t[range(n), selected_emotion] = 1
-                emotion_weight = torch.tensor([1, 1, 2, 2, 4, 8, 8]).type_as(prediction)
+                # emotion_weight = torch.tensor([1, 1, 2, 2, 4, 8, 8]).type_as(prediction)
                 emotion_loss += F.cross_entropy(
-                    prediction_pos[:, 20:27], t, weight=emotion_weight
+                    prediction_pos[:, 20:27], t  # , weight=emotion_weight
                 )  # BCE
 
                 # gender loss

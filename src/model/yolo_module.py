@@ -281,7 +281,7 @@ class YOLOModule(LightningModule):
         )
 
         scheduler = ReduceLROnPlateau(
-            optimizer, mode="max", factor=0.5, patience=10, min_lr=0.00001, cooldown=5
+            optimizer, mode="max", factor=0.5, patience=15, min_lr=0.00001, cooldown=5
         )
 
         return {
