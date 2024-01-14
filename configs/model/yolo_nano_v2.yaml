@@ -46,7 +46,10 @@ nms_threshold: 0.35
 confidence_threshold: 0.01
 
 optimizer:
-  learning_rate: 0.01
+  learning_rate: 0.03
+  momentum: 0.9
   weight_decay: 0.0005
+  warmup: 0.1
+  ema: True
 
 compile: false
