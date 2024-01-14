@@ -81,8 +81,8 @@ class YOLOModule(LightningModule):
         #     self.show_score_thr = test_cfgs['show_score_thr']
 
     def on_train_start(self) -> None:
-        if self.hparams.optimizer["ema"] is True:
-            self.ema_model = ModelEMA(self.model, 0.9998)
+        # if self.hparams.optimizer["ema"] is True:
+        #     self.ema_model = ModelEMA(self.model, 0.9998)
 
         # model_summary(self, self.img_size, self.device)
         pass
@@ -111,8 +111,8 @@ class YOLOModule(LightningModule):
         self.manual_backward(losses["loss"])
         optimizer.step()
 
-        if self.hparams.optimizer["ema"] is True:
-            self.ema_model.update(self.model)
+        # if self.hparams.optimizer["ema"] is True:
+        #     self.ema_model.update(self.model)
         self.lr_schedulers().step()
 
         if batch_idx == self.trainer.num_training_batches - 1:
