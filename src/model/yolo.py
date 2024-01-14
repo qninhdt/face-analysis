@@ -1,7 +1,7 @@
 import torch
 
-class YOLO(torch.nn.Module):
 
+class YOLO(torch.nn.Module):
     def __init__(self, backbone=None, neck=None, head=None, loss=None):
         super().__init__()
         self.backbone = backbone

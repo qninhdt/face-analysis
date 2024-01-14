@@ -42,9 +42,6 @@ class YOLOModule(LightningModule):
 
         self.automatic_optimization = False
 
-        # checkpoint = torch.load("./checkpoints/yolo_nano/last.ckpt")
-        # self.load_state_dict(checkpoint["state_dict"])
-
         # metrics
         iou_types = [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
 
@@ -178,7 +175,7 @@ class YOLOModule(LightningModule):
 
         # inference
         start_time = time.time()
-        predictions = self.model(images, targets)
+        predictions = self.model(images)
         self.infr_times.append(time.time() - start_time)
 
         # postprocess
@@ -321,7 +318,7 @@ class YOLOModule(LightningModule):
 
         # inference
         start_time = time.time()
-        predictions = self.model(images, targets)
+        predictions = self.model(images)
         self.infr_times.append(time.time() - start_time)
 
         # postprocess

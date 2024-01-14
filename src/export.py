@@ -9,6 +9,7 @@ import numpy as np
 import torch.onnx
 from pathlib import Path
 import torch.quantization
+from onnxruntime.quantization import quantize_dynamic, QuantType, quantize
 
 sys.path.append(str(Path(__file__).parent))
 os.environ["PROJECT_ROOT"] = str(Path(__file__).parent.parent)
@@ -35,17 +36,7 @@ def main(cfg: DictConfig) -> None:
     model.load_state_dict(checkpoint["state_dict"])
 
     model = model.model
-
-    log.info(f"Model size: {get_model_size(model):.2f} MB")
-
-    model.qconfig = torch.quantization.get_default_qconfig("fbgemm")
-
-    torch.quantization.prepare(model, inplace=True)
-    torch.quantization.convert(model, inplace=True)
-
-    log.info(f"Quantized model size: {get_model_size(model):.2f} MB")
-
-    print(model)
+    model.eval()
 
     torch.onnx.export(
         model,
@@ -57,9 +48,13 @@ def main(cfg: DictConfig) -> None:
         input_names=["input"],
         output_names=["output"],
         dynamic_axes={
-            "input": {0: "batch_size"},
-            "output": {0: "batch_size"},
+            "input": {0: "batch_size", 1: "channels", 2: "height", 3: "width"},
+            "output": {0: "batch_size", 2: "num_detections", 3: "data"},
         },
+    )
+
+    quantized_model = quantize_dynamic(
+        cfg.onnx_path, cfg.quantized_onnx_path, weight_type=QuantType.QUInt8
     )
 
 

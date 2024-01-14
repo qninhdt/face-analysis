@@ -2,11 +2,18 @@
 torch
 torchvision
 lightning
-torchmetrics>=0.11.4
+torchmetrics
+torchmetrics[detection]
 numpy
 pandas
 scikit-learn
 matplotlib
+onnx
+onnxruntime
+opencv-python
+thop
+streamlit
+
 
 # --------- hydra --------- #
 hydra-core==1.3.2

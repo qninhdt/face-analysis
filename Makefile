@@ -49,4 +49,6 @@ submit-yolo:
 export-yolo:
 	python src/export.py \
 		model=yolo_nano_v1 \
-		onnx_path="./checkpoints/yolo_nano_v1/yolo_nano_v1.onnx"
+		ckpt_path="./checkpoints/yolo_nano_v1/epoch\=192.ckpt" \
+		onnx_path="./checkpoints/yolo_nano_v1/yolo_nano_v1.onnx" \
+		quantized_onnx_path="./checkpoints/yolo_nano_v1/yolo_nano_v1.quant.onnx"
